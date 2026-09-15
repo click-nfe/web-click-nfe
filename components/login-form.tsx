@@ -3,6 +3,8 @@
 import { ArrowRight, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { FormEvent, useState } from "react";
 
+import { getLoginErrorMessage, login } from "@/lib/bff/auth";
+
 type LoginFormProps = {
   nextPath: string;
 };
@@ -20,24 +22,13 @@ export function LoginForm({ nextPath }: LoginFormProps) {
     const formData = new FormData(event.currentTarget);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.get("email"),
-          password: formData.get("password"),
-        }),
+      await login({
+        email: String(formData.get("email") ?? ""),
+        password: String(formData.get("password") ?? ""),
       });
-      const data = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        setError(data.error ?? "Não foi possível entrar.");
-        return;
-      }
-
       window.location.assign(nextPath);
-    } catch {
-      setError("Não foi possível conectar. Tente novamente.");
+    } catch (requestError) {
+      setError(getLoginErrorMessage(requestError));
     } finally {
       setLoading(false);
     }
