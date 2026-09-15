@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { setAuthCookies } from "@/lib/auth-cookies";
-import { backendFetch, type LoginResponse } from "@/lib/backend";
+import { login } from "@/lib/api/auth";
+import { apiUnavailableMessage, hasApiStatus, logApiError } from "@/lib/api/errors";
 
 export async function POST(request: Request) {
   let credentials: unknown;
@@ -24,27 +25,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const apiResponse = await backendFetch("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: credentials.email, password: credentials.password }),
-    });
-
-    if (!apiResponse.ok) {
-      const status = apiResponse.status === 401 ? 401 : 502;
-      return NextResponse.json(
-        { error: status === 401 ? "E-mail ou senha inválidos." : "Não foi possível entrar agora." },
-        { status },
-      );
-    }
-
-    const data = (await apiResponse.json()) as LoginResponse;
+    const data = await login(credentials.email, credentials.password);
     const response = NextResponse.json({ user: data.user });
     setAuthCookies(response, data.tokens);
     return response;
-  } catch {
+  } catch (error) {
+    logApiError("auth.login", error);
+
+    if (hasApiStatus(error, 401)) {
+      return NextResponse.json({ error: "E-mail ou senha inválidos." }, { status: 401 });
+    }
+
     return NextResponse.json(
-      { error: "A API não está disponível. Confirme se o container está em execução." },
+      { error: apiUnavailableMessage(error) },
       { status: 502 },
     );
   }

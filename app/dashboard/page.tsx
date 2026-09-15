@@ -19,18 +19,13 @@ import { Brand } from "@/components/brand";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ACCESS_COOKIE } from "@/lib/auth-cookies";
-import { backendFetch, bearerHeaders, type UserIdentity } from "@/lib/backend";
+import { getCurrentUser, type UserIdentity } from "@/lib/api/auth";
+import { hasApiStatus, logApiError } from "@/lib/api/errors";
+import { getCurrentOrganization, type Organization } from "@/lib/api/organization";
 
 export const metadata: Metadata = {
   title: "Visão geral",
   description: "Acompanhe sua operação no Click NFe.",
-};
-
-type Organization = {
-  id: string;
-  nome: string;
-  slug: string;
-  ativo: boolean;
 };
 
 type DashboardSession =
@@ -45,32 +40,21 @@ async function getDashboardSession(): Promise<DashboardSession> {
     redirect("/api/auth/refresh?next=/dashboard");
   }
 
-  let meResponse: Response;
-  let organizationResponse: Response;
-
   try {
-    [meResponse, organizationResponse] = await Promise.all([
-      backendFetch("/auth/me", { headers: bearerHeaders(accessToken) }),
-      backendFetch("/organizations/me", { headers: bearerHeaders(accessToken) }),
+    const [user, organization] = await Promise.all([
+      getCurrentUser(accessToken),
+      getCurrentOrganization(accessToken),
     ]);
-  } catch {
+    return { state: "ready", user, organization };
+  } catch (error) {
+    logApiError("dashboard.session", error);
+
+    if (hasApiStatus(error, 401, 403)) {
+      redirect("/api/auth/refresh?next=/dashboard");
+    }
+
     return { state: "unavailable" };
   }
-
-  if (meResponse.status === 401 || meResponse.status === 403) {
-    redirect("/api/auth/refresh?next=/dashboard");
-  }
-
-  if (!meResponse.ok || !organizationResponse.ok) {
-    return { state: "unavailable" };
-  }
-
-  const [user, organizationData] = await Promise.all([
-    meResponse.json() as Promise<UserIdentity>,
-    organizationResponse.json() as Promise<{ organization: Organization }>,
-  ]);
-
-  return { state: "ready", user, organization: organizationData.organization };
 }
 
 const navItems = [

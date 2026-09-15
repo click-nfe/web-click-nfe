@@ -2,7 +2,8 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { ACCESS_COOKIE, clearAuthCookies } from "@/lib/auth-cookies";
-import { backendFetch, bearerHeaders } from "@/lib/backend";
+import { logout } from "@/lib/api/auth";
+import { logApiError } from "@/lib/api/errors";
 
 export async function POST() {
   const cookieStore = await cookies();
@@ -10,11 +11,9 @@ export async function POST() {
 
   if (accessToken) {
     try {
-      await backendFetch("/auth/logout", {
-        method: "POST",
-        headers: bearerHeaders(accessToken),
-      });
-    } catch {
+      await logout(accessToken);
+    } catch (error) {
+      logApiError("auth.logout", error);
       // A sessão local deve ser encerrada mesmo se a API estiver indisponível.
     }
   }
