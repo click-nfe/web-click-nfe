@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Click NFe — Web
 
-## Getting Started
+Interface web do Click NFe para operações fiscais de importação via DUIMP.
 
-First, run the development server:
+## Requisitos
+
+- Bun 1.1.33 ou compatível
+- API Click NFe e PostgreSQL em execução pelos containers Docker
+
+## Configuração local
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+cp .env.example .env.local
+bun install
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A aplicação fica disponível em [http://localhost:3000](http://localhost:3000). Por padrão, o BFF acessa a API em `http://localhost:5000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variáveis de ambiente
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variável | Uso | Padrão |
+| --- | --- | --- |
+| `API_URL` | URL interna da API, usada somente no servidor Next.js | `http://localhost:5000` |
+| `REFRESH_TOKEN_MAX_AGE_SECONDS` | Duração do cookie de renovação | `604800` |
+| `NEXT_PUBLIC_DEMO_REQUEST_URL` | Destino do formulário comercial | envio desabilitado |
 
-## Learn More
+## Autenticação
 
-To learn more about Next.js, take a look at the following resources:
+O navegador conversa com as rotas `/api/auth/*` do Next.js. Os tokens retornados pela API são armazenados em cookies `HttpOnly`, sem exposição ao JavaScript do cliente. A área `/dashboard` exige uma sessão válida e tenta renovar o token de acesso quando necessário.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+O cadastro público não é exposto no frontend. Novas organizações e usuários passam pelo fluxo controlado de demonstração e configuração.
