@@ -1,15 +1,16 @@
 "use client";
 
 import {
+  ArrowRight,
   Building2,
   ChevronLeft,
   ChevronRight,
-  Pencil,
   Plus,
   RefreshCw,
   Search,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import useSWR from "swr";
 
@@ -26,6 +27,7 @@ const PAGE_SIZE = 10;
 type ActiveFilter = "all" | "active" | "inactive";
 
 export function ClientList() {
+  const router = useRouter();
   const [draftQuery, setDraftQuery] = useState("");
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("active");
@@ -152,9 +154,19 @@ export function ClientList() {
               </thead>
               <tbody className="divide-y divide-border">
                 {data.items.map((client) => (
-                  <tr key={client.id} className="transition hover:bg-muted/30">
+                  <tr
+                    key={client.id}
+                    className="cursor-pointer transition hover:bg-muted/45"
+                    onClick={() => router.push(`/dashboard/clientes/${client.id}`)}
+                  >
                     <td className="max-w-72 px-6 py-5">
-                      <p className="truncate font-semibold">{client.nome_resumido || client.razao_social}</p>
+                      <Link
+                        href={`/dashboard/clientes/${client.id}`}
+                        className="block truncate font-semibold hover:text-primary hover:underline hover:underline-offset-4"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        {client.nome_resumido || client.razao_social}
+                      </Link>
                       <p className="mt-1 truncate text-xs text-muted-foreground">{client.razao_social}</p>
                       <p className="mt-1 font-mono text-xs text-muted-foreground">{formatCnpj(client.cnpj)}</p>
                     </td>
@@ -170,10 +182,10 @@ export function ClientList() {
                     <td className="whitespace-nowrap px-6 py-5 text-xs text-muted-foreground">
                       <time dateTime={client.updated_at}>{formatClientDate(client.updated_at)}</time>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5" onClick={(event) => event.stopPropagation()}>
                       <div className="flex justify-end gap-2">
                         <Link href={`/dashboard/clientes/${client.id}`} className="button button-secondary px-3">
-                          <Pencil size={15} /> Editar
+                          Abrir perfil <ArrowRight size={15} />
                         </Link>
                         <button
                           type="button"

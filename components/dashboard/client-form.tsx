@@ -1,19 +1,17 @@
 "use client";
 
 import axios from "axios";
-import { ArrowLeft, CheckCircle2, RefreshCw, Save, Search } from "lucide-react";
+import { CheckCircle2, Save, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import useSWR from "swr";
 
 import type {
   ClientRecord,
   CreateClientPayload,
   UpdateClientPayload,
 } from "@/lib/api/client-record";
-import { routes } from "@/lib/api/routes";
-import { bffErrorMessage, bffFetcher } from "@/lib/bff/client";
+import { bffErrorMessage } from "@/lib/bff/client";
 import {
   createClient,
   lookupClientCompany,
@@ -97,7 +95,7 @@ function payloadFromValues(values: ClientFormValues): CreateClientPayload {
   };
 }
 
-function ClientForm({
+export function ClientForm({
   initialClient,
   initialNotice,
   onUpdated,
@@ -454,7 +452,12 @@ function ClientForm({
       </section>
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <Link href="/dashboard/clientes" className="button button-secondary min-h-11">Cancelar</Link>
+        <Link
+          href={editing ? `/dashboard/clientes/${initialClient?.id}` : "/dashboard/clientes"}
+          className="button button-secondary min-h-11"
+        >
+          Cancelar
+        </Link>
         <button type="submit" disabled={saving} className="button button-primary min-h-11 sm:min-w-40">
           <Save size={17} /> {saving ? "Salvando..." : editing ? "Salvar alterações" : "Cadastrar cliente"}
         </button>
@@ -465,44 +468,4 @@ function ClientForm({
 
 export function NewClientForm() {
   return <ClientForm />;
-}
-
-export function ClientEditor({
-  clientId,
-  created,
-}: {
-  clientId: string;
-  created?: boolean;
-}) {
-  const url = routes.bff.client.detail(clientId);
-  const { data, error, isLoading, mutate } = useSWR<ClientRecord>(url, bffFetcher);
-
-  if (isLoading) {
-    return (
-      <div className="mt-8 space-y-4" aria-label="Carregando cliente">
-        <div className="h-72 animate-pulse rounded-2xl bg-muted" />
-        <div className="h-48 animate-pulse rounded-2xl bg-muted" />
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="surface-card mt-8 p-10 text-center">
-        <p className="text-sm text-destructive">{bffErrorMessage(error)}</p>
-        <div className="mt-5 flex justify-center gap-3">
-          <Link href="/dashboard/clientes" className="button button-secondary"><ArrowLeft size={16} /> Voltar</Link>
-          <button type="button" className="button button-primary" onClick={() => mutate()}><RefreshCw size={16} /> Tentar novamente</button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <ClientForm
-      initialClient={data}
-      initialNotice={created ? "Cliente cadastrado com sucesso." : undefined}
-      onUpdated={(updated) => mutate(updated, { revalidate: false })}
-    />
-  );
 }
