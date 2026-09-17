@@ -23,6 +23,7 @@ export const routes = {
     },
     importProcess: {
       list: "/import-processes",
+      dashboardSummary: "/import-processes/dashboard-summary",
       metadata: "/import-processes/metadata",
       clientGroups: "/import-processes/client-groups",
       detail: (id: string) => `/import-processes/${resourceId(id)}`,
@@ -36,6 +37,10 @@ export const routes = {
       login: "/api/auth/login",
       refresh: "/api/auth/refresh",
       logout: "/api/auth/logout",
+    },
+    importProcess: {
+      list: "/api/import-processes",
+      dashboardSummary: "/api/import-processes/summary",
     },
   },
 } as const;
