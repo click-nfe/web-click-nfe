@@ -29,7 +29,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { label: "Visão geral", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Processos", icon: FileClock, href: "/dashboard/processos" },
-  { label: "Clientes", icon: UsersRound },
+  { label: "Clientes", icon: UsersRound, href: "/dashboard/clientes" },
   { label: "Configurações", icon: Settings2 },
 ];
 

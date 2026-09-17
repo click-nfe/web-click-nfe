@@ -21,6 +21,10 @@ export const routes = {
     organization: {
       me: "/organizations/me",
     },
+    client: {
+      list: "/clients",
+      detail: (id: string) => `/clients/${resourceId(id)}`,
+    },
     importProcess: {
       list: "/import-processes",
       dashboardSummary: "/import-processes/dashboard-summary",
@@ -41,6 +45,10 @@ export const routes = {
     importProcess: {
       list: "/api/import-processes",
       dashboardSummary: "/api/import-processes/summary",
+    },
+    client: {
+      list: "/api/clients",
+      detail: (id: string) => `/api/clients/${resourceId(id)}`,
     },
   },
 } as const;

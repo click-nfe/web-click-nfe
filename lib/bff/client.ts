@@ -27,8 +27,12 @@ export async function bffFetcher<T>(url: string) {
 }
 
 export function bffErrorMessage(error: unknown) {
-  if (axios.isAxiosError<{ error?: string }>(error)) {
-    return error.response?.data?.error ?? "Não foi possível carregar os dados.";
+  if (axios.isAxiosError<{ error?: string; message?: string }>(error)) {
+    return (
+      error.response?.data?.message ??
+      error.response?.data?.error ??
+      "Não foi possível carregar os dados."
+    );
   }
   return "Não foi possível carregar os dados.";
 }
