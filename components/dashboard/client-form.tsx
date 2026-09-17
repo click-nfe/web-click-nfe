@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { ArrowLeft, CheckCircle2, RefreshCw, Save } from "lucide-react";
+import { ArrowLeft, CheckCircle2, RefreshCw, Save, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -14,8 +14,17 @@ import type {
 } from "@/lib/api/client-record";
 import { routes } from "@/lib/api/routes";
 import { bffErrorMessage, bffFetcher } from "@/lib/bff/client";
-import { createClient, updateClient } from "@/lib/bff/clients";
-import { cnpjDigits, formatCnpj, isValidCnpj } from "@/lib/client-display";
+import {
+  createClient,
+  lookupClientCompany,
+  updateClient,
+} from "@/lib/bff/clients";
+import {
+  cnpjCharacters,
+  formatCnae,
+  formatCnpj,
+  isValidCnpj,
+} from "@/lib/client-display";
 
 type ClientFormValues = {
   cnpj: string;
@@ -74,7 +83,7 @@ function nullable(value: string) {
 
 function payloadFromValues(values: ClientFormValues): CreateClientPayload {
   return {
-    cnpj: cnpjDigits(values.cnpj),
+    cnpj: cnpjCharacters(values.cnpj),
     razao_social: values.razao_social.trim(),
     nome_resumido: nullable(values.nome_resumido),
     inscricao_estadual: nullable(values.inscricao_estadual),
@@ -102,7 +111,10 @@ function ClientForm({
     initialClient ? valuesFromClient(initialClient) : emptyValues,
   );
   const [saving, setSaving] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
   const [notice, setNotice] = useState<string | null>(initialNotice ?? null);
+  const [lookupNotice, setLookupNotice] = useState<string | null>(null);
+  const [registrationStatus, setRegistrationStatus] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [existingClientId, setExistingClientId] = useState<string | null>(null);
@@ -122,6 +134,59 @@ function ClientForm({
     setNotice(null);
   }
 
+  async function lookupCnpj() {
+    setFormError(null);
+    setExistingClientId(null);
+    setLookupNotice(null);
+    setRegistrationStatus(null);
+    if (!isValidCnpj(values.cnpj)) {
+      setFieldErrors((current) => ({
+        ...current,
+        cnpj: "Informe um CNPJ válido antes de consultar.",
+      }));
+      return;
+    }
+
+    setLookingUp(true);
+    try {
+      const company = await lookupClientCompany(cnpjCharacters(values.cnpj));
+      setValues((current) => ({
+        ...current,
+        razao_social: company.legal_name || current.razao_social,
+        nome_resumido: company.trade_name || current.nome_resumido,
+        regime_tributacao:
+          company.tax_regime_suggestion || current.regime_tributacao,
+        cnae_principal: company.main_activity
+          ? formatCnae(
+              company.main_activity.code,
+              company.main_activity.description,
+            )
+          : current.cnae_principal,
+        cnae_secundario: company.secondary_activities.length
+          ? company.secondary_activities
+              .map((activity) => formatCnae(activity.code, activity.description))
+              .join("\n")
+          : current.cnae_secundario,
+        endereco_completo_escritorio:
+          company.formatted_address || current.endereco_completo_escritorio,
+      }));
+      setFieldErrors((current) => {
+        const next = { ...current };
+        delete next.cnpj;
+        delete next.razao_social;
+        return next;
+      });
+      setRegistrationStatus(company.registration_status || "Não informada");
+      setLookupNotice(
+        "Dados públicos preenchidos pela BrasilAPI. Revise as informações antes de salvar; a inscrição estadual continua manual.",
+      );
+    } catch (requestError) {
+      setFormError(bffErrorMessage(requestError));
+    } finally {
+      setLookingUp(false);
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
@@ -130,7 +195,7 @@ function ClientForm({
 
     const validationErrors: Record<string, string> = {};
     if (!editing && !isValidCnpj(values.cnpj)) {
-      validationErrors.cnpj = "Informe um CNPJ válido, com 14 dígitos e verificadores corretos.";
+      validationErrors.cnpj = "Informe um CNPJ válido, com 14 caracteres e verificadores corretos.";
     }
     if (!values.razao_social.trim()) {
       validationErrors.razao_social = "Informe a razão social.";
@@ -201,6 +266,19 @@ function ClientForm({
           <CheckCircle2 size={18} /> {notice}
         </div>
       ) : null}
+      {lookupNotice ? (
+        <div className="rounded-2xl border border-primary/20 bg-sage-soft px-5 py-4 text-sm text-sage-strong" role="status">
+          <div className="flex flex-wrap items-center gap-2">
+            <CheckCircle2 size={18} />
+            <span>{lookupNotice}</span>
+            {registrationStatus ? (
+              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${registrationStatus === "ATIVA" ? "bg-primary text-primary-foreground" : "bg-destructive/10 text-destructive"}`}>
+                Receita: {registrationStatus}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       {formError ? (
         <div className="rounded-2xl border border-destructive/25 bg-destructive/5 px-5 py-4 text-sm text-destructive" role="alert">
           <p>{formError}</p>
@@ -220,15 +298,27 @@ function ClientForm({
         <div className="mt-6 grid gap-5 md:grid-cols-2">
           <label>
             <span className="field-label">CNPJ *</span>
-            <input
-              value={values.cnpj}
-              onChange={(event) => setValue("cnpj", formatCnpj(event.target.value))}
-              className="field-input"
-              inputMode="numeric"
-              placeholder="00.000.000/0000-00"
-              disabled={editing}
-              required
-            />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                value={values.cnpj}
+                onChange={(event) => setValue("cnpj", formatCnpj(event.target.value))}
+                className="field-input"
+                placeholder="00.000.000/0000-00"
+                disabled={editing}
+                autoCapitalize="characters"
+                required
+              />
+              {!editing ? (
+                <button
+                  type="button"
+                  className="button button-secondary min-h-12 shrink-0 px-4"
+                  disabled={lookingUp || !isValidCnpj(values.cnpj)}
+                  onClick={lookupCnpj}
+                >
+                  <Search size={16} /> {lookingUp ? "Consultando..." : "Consultar e preencher"}
+                </button>
+              ) : null}
+            </div>
             {editing ? <span className="mt-1.5 block text-xs text-muted-foreground">O CNPJ identifica o cadastro e não pode ser alterado.</span> : inputError("cnpj")}
           </label>
           <label>
@@ -308,11 +398,11 @@ function ClientForm({
           </label>
           <label>
             <span className="field-label">CNAEs secundários</span>
-            <input
+            <textarea
               value={values.cnae_secundario}
               onChange={(event) => setValue("cnae_secundario", event.target.value)}
-              className="field-input"
-              placeholder="Separe múltiplos registros por vírgula"
+              className="field-input min-h-28 resize-y py-3"
+              placeholder="Um código e descrição por linha"
             />
             {inputError("cnae_secundario")}
           </label>

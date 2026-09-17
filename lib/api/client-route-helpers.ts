@@ -77,19 +77,18 @@ export function clientApiErrorResponse(operation: string, error: unknown) {
   if (hasApiStatus(error, 401, 403)) {
     return NextResponse.json({ error: "Sessão expirada." }, { status: 401 });
   }
-  if (hasApiStatus(error, 404)) {
-    return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
-  }
-
   if (
     axios.isAxiosError(error) &&
     error.response &&
-    [400, 409].includes(error.response.status) &&
+    [400, 404, 409, 503].includes(error.response.status) &&
     isObject(error.response.data)
   ) {
     return NextResponse.json(error.response.data, {
       status: error.response.status,
     });
+  }
+  if (hasApiStatus(error, 404)) {
+    return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
   }
 
   return NextResponse.json(
