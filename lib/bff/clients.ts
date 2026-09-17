@@ -1,6 +1,7 @@
 import type {
   ClientListParams,
   ClientListResponse,
+  ClientCompanyLookup,
   ClientRecord,
   CreateClientPayload,
   UpdateClientPayload,
@@ -44,6 +45,13 @@ export async function updateClient(id: string, payload: UpdateClientPayload) {
   const response = await bffClient.patch<ClientRecord>(
     routes.bff.client.detail(id),
     payload,
+  );
+  return response.data;
+}
+
+export async function lookupClientCompany(cnpj: string) {
+  const response = await bffClient.get<ClientCompanyLookup>(
+    routes.bff.client.cnpjLookup(cnpj),
   );
   return response.data;
 }

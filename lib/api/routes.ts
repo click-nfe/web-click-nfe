@@ -24,6 +24,8 @@ export const routes = {
     client: {
       list: "/clients",
       detail: (id: string) => `/clients/${resourceId(id)}`,
+      cnpjLookup: (cnpj: string) =>
+        `/clients/lookup/cnpj/${resourceId(cnpj)}`,
     },
     importProcess: {
       list: "/import-processes",
@@ -49,6 +51,8 @@ export const routes = {
     client: {
       list: "/api/clients",
       detail: (id: string) => `/api/clients/${resourceId(id)}`,
+      cnpjLookup: (cnpj: string) =>
+        `/api/clients/lookup/cnpj/${resourceId(cnpj)}`,
     },
   },
 } as const;

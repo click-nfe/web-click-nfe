@@ -64,6 +64,34 @@ export type UpdateClientPayload = Partial<
   Omit<CreateClientPayload, "cnpj">
 >;
 
+export type CompanyActivity = {
+  code: string;
+  description: string;
+};
+
+export type ClientCompanyLookup = {
+  provider: "brasil_api";
+  cnpj: string;
+  legal_name: string;
+  trade_name: string;
+  registration_status: string;
+  main_activity: CompanyActivity | null;
+  secondary_activities: CompanyActivity[];
+  address: {
+    street_type: string;
+    street: string;
+    number: string;
+    complement: string;
+    district: string;
+    city: string;
+    state: string;
+    zip_code: string;
+    city_code: string;
+  };
+  formatted_address: string;
+  tax_regime_suggestion: "1" | null;
+};
+
 function toBackendParams(params: ClientListParams = {}) {
   return {
     q: params.query,
@@ -117,6 +145,14 @@ export async function updateClient(
   const response = await apiClient.patch<ClientRecord>(
     routes.backend.client.detail(id),
     payload,
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function lookupClientCompany(accessToken: string, cnpj: string) {
+  const response = await apiClient.get<ClientCompanyLookup>(
+    routes.backend.client.cnpjLookup(cnpj),
     bearerConfig(accessToken),
   );
   return response.data;
