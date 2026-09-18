@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowRight,
   Building2,
   ChevronLeft,
   ChevronRight,
@@ -16,7 +15,7 @@ import useSWR from "swr";
 
 import type { ClientListResponse } from "@/lib/api/client-record";
 import { bffErrorMessage, bffFetcher } from "@/lib/bff/client";
-import { clientListUrl, updateClient } from "@/lib/bff/clients";
+import { clientListUrl } from "@/lib/bff/clients";
 import {
   formatClientDate,
   formatCnpj,
@@ -32,8 +31,6 @@ export function ClientList() {
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("active");
   const [offset, setOffset] = useState(0);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
 
   const url = useMemo(
     () =>
@@ -56,19 +53,6 @@ export function ClientList() {
     event.preventDefault();
     setOffset(0);
     setQuery(draftQuery.trim());
-  }
-
-  async function toggleClient(id: string, active: boolean) {
-    setUpdatingId(id);
-    setActionError(null);
-    try {
-      await updateClient(id, { ativo: !active });
-      await mutate();
-    } catch (requestError) {
-      setActionError(bffErrorMessage(requestError));
-    } finally {
-      setUpdatingId(null);
-    }
   }
 
   const start = data?.total ? offset + 1 : 0;
@@ -121,11 +105,6 @@ export function ClientList() {
               <Search size={16} /> Buscar
             </button>
           </form>
-          {actionError ? (
-            <p className="mt-4 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
-              {actionError}
-            </p>
-          ) : null}
         </div>
 
         {error ? (
@@ -141,15 +120,13 @@ export function ClientList() {
           </div>
         ) : data?.items.length ? (
           <div className="overflow-x-auto" aria-busy={isLoading}>
-            <table className="w-full min-w-[880px] text-left text-sm">
+            <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="bg-muted/55 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-6 py-4 font-semibold">Cliente</th>
                   <th className="px-6 py-4 font-semibold">Inscrição estadual</th>
                   <th className="px-6 py-4 font-semibold">Regime tributário</th>
-                  <th className="px-6 py-4 font-semibold">Situação</th>
                   <th className="px-6 py-4 font-semibold">Atualizado</th>
-                  <th className="px-6 py-4 text-right font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -174,28 +151,8 @@ export function ClientList() {
                     <td className="max-w-56 px-6 py-5 text-muted-foreground">
                       {client.regime_tributacao ? taxRegimeLabels[client.regime_tributacao] ?? client.regime_tributacao : "Não informado"}
                     </td>
-                    <td className="px-6 py-5">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${client.ativo ? "bg-sage-soft text-sage-strong" : "bg-muted text-muted-foreground"}`}>
-                        {client.ativo ? "Ativo" : "Inativo"}
-                      </span>
-                    </td>
                     <td className="whitespace-nowrap px-6 py-5 text-xs text-muted-foreground">
                       <time dateTime={client.updated_at}>{formatClientDate(client.updated_at)}</time>
-                    </td>
-                    <td className="px-6 py-5" onClick={(event) => event.stopPropagation()}>
-                      <div className="flex justify-end gap-2">
-                        <Link href={`/dashboard/clientes/${client.id}`} className="button button-secondary px-3">
-                          Abrir perfil <ArrowRight size={15} />
-                        </Link>
-                        <button
-                          type="button"
-                          className="button button-ghost px-3"
-                          disabled={updatingId === client.id}
-                          onClick={() => toggleClient(client.id, client.ativo)}
-                        >
-                          {updatingId === client.id ? "Salvando..." : client.ativo ? "Inativar" : "Reativar"}
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}

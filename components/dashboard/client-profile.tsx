@@ -30,29 +30,13 @@ import {
   formatCnpj,
   taxRegimeLabels,
 } from "@/lib/client-display";
+import type { ClientProfileSection } from "@/lib/client-profile";
 import {
   formatProcessDate,
   importProcessStatusClass,
   importProcessStatusLabels,
   nextActionLabels,
 } from "@/lib/import-process-display";
-
-export const clientProfileSections = [
-  "overview",
-  "registration",
-  "certificates",
-  "fiscal-profile",
-  "tax-rules",
-  "processes",
-] as const;
-
-export type ClientProfileSection = (typeof clientProfileSections)[number];
-
-export function isClientProfileSection(
-  value: string | undefined,
-): value is ClientProfileSection {
-  return clientProfileSections.includes(value as ClientProfileSection);
-}
 
 const navigation: Array<{
   value: ClientProfileSection;
