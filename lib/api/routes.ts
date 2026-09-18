@@ -29,6 +29,10 @@ export const routes = {
       fiscalProfile: (id: string) =>
         `/clients/${resourceId(id)}/fiscal-profile`,
     },
+    fiscalReference: {
+      postalCode: (zipCode: string) =>
+        `/fiscal-reference/postal-codes/${resourceId(zipCode)}`,
+    },
     importProcess: {
       list: "/import-processes",
       dashboardSummary: "/import-processes/dashboard-summary",
@@ -57,6 +61,10 @@ export const routes = {
         `/api/clients/lookup/cnpj/${resourceId(cnpj)}`,
       fiscalProfile: (id: string) =>
         `/api/clients/${resourceId(id)}/fiscal-profile`,
+    },
+    fiscalReference: {
+      postalCode: (zipCode: string) =>
+        `/api/fiscal-reference/postal-codes/${resourceId(zipCode)}`,
     },
   },
 } as const;
