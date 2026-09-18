@@ -100,6 +100,7 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
     } catch (uploadError) {
       setPassword("");
       setFormError(bffErrorMessage(uploadError));
+      await mutate().catch(() => undefined);
     } finally {
       setUploading(false);
     }
@@ -150,7 +151,7 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
               name="certificate"
               accept=".pfx,.p12,application/x-pkcs12"
               className="min-h-12 rounded-xl border border-border bg-background px-4 py-3 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-sage-soft file:px-3 file:py-1.5 file:font-semibold file:text-sage-strong"
-              disabled={uploading}
+              disabled={uploading || actionId !== null}
               required
             />
             <span className="text-xs font-normal text-muted-foreground">
@@ -165,7 +166,7 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="new-password"
               className="min-h-12 rounded-xl border border-border bg-background px-4 outline-none ring-primary/20 focus:ring-4"
-              disabled={uploading}
+              disabled={uploading || actionId !== null}
               required
             />
             <span className="text-xs font-normal text-muted-foreground">
@@ -180,14 +181,14 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
                 setEnvironment(event.target.value as FiscalCertificateEnvironment)
               }
               className="min-h-12 rounded-xl border border-border bg-background px-4 outline-none ring-primary/20 focus:ring-4"
-              disabled={uploading}
+              disabled={uploading || actionId !== null}
             >
               <option value="homologation">Homologação</option>
               <option value="production">Produção</option>
             </select>
           </label>
           <div className="flex items-end">
-            <button type="submit" className="button button-primary" disabled={uploading}>
+            <button type="submit" className="button button-primary" disabled={uploading || actionId !== null}>
               {uploading ? (
                 <><LoaderCircle className="animate-spin" size={16} /> Validando...</>
               ) : (
@@ -263,7 +264,7 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
                     <button
                       type="button"
                       className="button button-secondary"
-                      disabled={actionId === certificate.id}
+                      disabled={actionId !== null || uploading}
                       onClick={() => runAction(certificate, "validate")}
                     >
                       <RefreshCw className={actionId === certificate.id ? "animate-spin" : ""} size={16} />
@@ -273,7 +274,7 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
                       <button
                         type="button"
                         className="button button-primary"
-                        disabled={actionId === certificate.id}
+                        disabled={actionId !== null || uploading}
                         onClick={() => runAction(certificate, "activate")}
                       >
                         <ShieldCheck size={16} /> Ativar

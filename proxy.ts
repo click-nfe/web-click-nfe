@@ -28,5 +28,9 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: [
+    "/dashboard/:path*",
+    "/login",
+    "/api/clients/:id/fiscal-certificates",
+  ],
 };
