@@ -28,6 +28,14 @@ export const routes = {
         `/clients/lookup/cnpj/${resourceId(cnpj)}`,
       fiscalProfile: (id: string) =>
         `/clients/${resourceId(id)}/fiscal-profile`,
+      fiscalCertificates: (id: string) =>
+        `/clients/${resourceId(id)}/fiscal-certificates`,
+      fiscalCertificateUpload: (id: string) =>
+        `/clients/${resourceId(id)}/fiscal-certificates/upload`,
+      fiscalCertificateValidate: (id: string, certificateId: string) =>
+        `/clients/${resourceId(id)}/fiscal-certificates/${resourceId(certificateId)}/validate`,
+      fiscalCertificateActivate: (id: string, certificateId: string) =>
+        `/clients/${resourceId(id)}/fiscal-certificates/${resourceId(certificateId)}/activate`,
     },
     fiscalReference: {
       postalCode: (zipCode: string) =>
@@ -61,6 +69,12 @@ export const routes = {
         `/api/clients/lookup/cnpj/${resourceId(cnpj)}`,
       fiscalProfile: (id: string) =>
         `/api/clients/${resourceId(id)}/fiscal-profile`,
+      fiscalCertificates: (id: string) =>
+        `/api/clients/${resourceId(id)}/fiscal-certificates`,
+      fiscalCertificateValidate: (id: string, certificateId: string) =>
+        `/api/clients/${resourceId(id)}/fiscal-certificates/${resourceId(certificateId)}/validate`,
+      fiscalCertificateActivate: (id: string, certificateId: string) =>
+        `/api/clients/${resourceId(id)}/fiscal-certificates/${resourceId(certificateId)}/activate`,
     },
     fiscalReference: {
       postalCode: (zipCode: string) =>
