@@ -20,6 +20,7 @@ import Link from "next/link";
 import useSWR from "swr";
 
 import { ClientForm } from "@/components/dashboard/client-form";
+import { ClientFiscalProfileSection } from "@/components/dashboard/client-fiscal-profile-form";
 import type { ClientRecord } from "@/lib/api/client-record";
 import type { ImportProcessListResponse } from "@/lib/api/import-process";
 import { routes } from "@/lib/api/routes";
@@ -181,7 +182,8 @@ function ClientOverview({ client }: { client: ClientRecord }) {
             icon={SlidersHorizontal}
             title="Perfil fiscal"
             description="Dados do emitente, ambiente, endereço fiscal e parâmetros padrão de emissão."
-            status="Pré-montado"
+            status="Disponível"
+            available
           />
           <ConfigurationCard
             clientId={client.id}
@@ -258,7 +260,7 @@ function ClientOverview({ client }: { client: ClientRecord }) {
 }
 
 const placeholderContent: Record<
-  Exclude<ClientProfileSection, "overview" | "registration" | "processes">,
+  Exclude<ClientProfileSection, "overview" | "registration" | "fiscal-profile" | "processes">,
   {
     icon: LucideIcon;
     eyebrow: string;
@@ -281,20 +283,6 @@ const placeholderContent: Record<
       "armazenamento futuro do segredo fora do banco de dados",
     ],
     note: "O upload ficará desabilitado até concluirmos o fluxo seguro de armazenamento e validação no backend.",
-  },
-  "fiscal-profile": {
-    icon: SlidersHorizontal,
-    eyebrow: "Parâmetros do emitente",
-    title: "Perfil fiscal",
-    description:
-      "Esta área reunirá os parâmetros usados como base para gerar os rascunhos de NF-e do cliente.",
-    items: [
-      "endereço fiscal estruturado e código IBGE do município",
-      "UF emitente, regime tributário e inscrições fiscais",
-      "ambiente de emissão e finalidade padrão da nota",
-      "indicadores e preferências de cálculo aplicáveis ao importador",
-    ],
-    note: "A estrutura visual está pronta; os campos serão conectados ao perfil fiscal da API no próximo checkpoint específico.",
   },
   "tax-rules": {
     icon: Scale,
@@ -524,9 +512,11 @@ export function ClientProfile({
         />
       ) : null}
       {section === "certificates" ||
-      section === "fiscal-profile" ||
       section === "tax-rules" ? (
         <PlannedSection section={section} />
+      ) : null}
+      {section === "fiscal-profile" ? (
+        <ClientFiscalProfileSection client={client} />
       ) : null}
       {section === "processes" ? <ClientProcessHistory clientId={client.id} /> : null}
     </>

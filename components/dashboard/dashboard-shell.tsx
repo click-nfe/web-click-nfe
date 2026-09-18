@@ -90,7 +90,7 @@ export function DashboardShell({
 
   return (
     <div className="min-h-screen bg-muted/35 lg:grid lg:grid-cols-[17rem_1fr]">
-      <aside className="hidden border-r border-border bg-card lg:flex lg:min-h-screen lg:flex-col lg:p-5">
+      <aside className="hidden border-r border-border bg-card lg:sticky lg:top-0 lg:flex lg:h-screen lg:self-start lg:flex-col lg:overflow-y-auto lg:p-5">
         <Brand />
 
         <div className="mt-8 rounded-xl bg-sage-soft p-3">

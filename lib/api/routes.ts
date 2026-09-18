@@ -26,6 +26,8 @@ export const routes = {
       detail: (id: string) => `/clients/${resourceId(id)}`,
       cnpjLookup: (cnpj: string) =>
         `/clients/lookup/cnpj/${resourceId(cnpj)}`,
+      fiscalProfile: (id: string) =>
+        `/clients/${resourceId(id)}/fiscal-profile`,
     },
     importProcess: {
       list: "/import-processes",
@@ -53,6 +55,8 @@ export const routes = {
       detail: (id: string) => `/api/clients/${resourceId(id)}`,
       cnpjLookup: (cnpj: string) =>
         `/api/clients/lookup/cnpj/${resourceId(cnpj)}`,
+      fiscalProfile: (id: string) =>
+        `/api/clients/${resourceId(id)}/fiscal-profile`,
     },
   },
 } as const;
