@@ -2,10 +2,8 @@ import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-import {
-  ClientProfile,
-  isClientProfileSection,
-} from "@/components/dashboard/client-profile";
+import { ClientProfile } from "@/components/dashboard/client-profile";
+import { isClientProfileSection } from "@/lib/client-profile";
 
 export const metadata: Metadata = {
   title: "Perfil do cliente",
