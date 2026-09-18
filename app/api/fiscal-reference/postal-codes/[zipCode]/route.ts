@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 import { lookupPostalCode } from "@/lib/api/fiscal-reference";
-import { clientApiErrorResponse } from "@/lib/api/client-route-helpers";
+import { fiscalReferenceApiErrorResponse } from "@/lib/api/fiscal-reference-route-helpers";
 import { ACCESS_COOKIE } from "@/lib/auth-cookies";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +22,9 @@ export async function GET(_request: NextRequest, context: Context) {
   try {
     return NextResponse.json(await lookupPostalCode(token, zipCode));
   } catch (error) {
-    return clientApiErrorResponse("fiscal-reference.postal-code", error);
+    return fiscalReferenceApiErrorResponse(
+      "fiscal-reference.postal-code",
+      error,
+    );
   }
 }
