@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import { CheckCircle2, RefreshCw, Save, Search } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import useSWR from "swr";
 
 import type {
@@ -16,6 +16,7 @@ import {
   upsertClientFiscalProfile,
 } from "@/lib/bff/client-fiscal-profile";
 import { lookupClientCompany } from "@/lib/bff/clients";
+import { lookupPostalCode } from "@/lib/bff/fiscal-reference";
 import { cnpjCharacters, formatCnpj } from "@/lib/client-display";
 
 type FiscalProfileValues = {
@@ -50,11 +51,9 @@ const requiredFields: Array<keyof FiscalProfileValues> = [
   "street",
   "number",
   "district",
-  "city_code",
   "city_name",
   "state",
   "zip_code",
-  "country_code",
   "country_name",
 ];
 
@@ -106,7 +105,12 @@ function FiscalProfileForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [lookingUp, setLookingUp] = useState(false);
+  const [lookingUpCompany, setLookingUpCompany] = useState(false);
+  const [lookingUpZip, setLookingUpZip] = useState(false);
+  const [resolvedZip, setResolvedZip] = useState(
+    initialProfile?.city_code ? initialProfile.zip_code : "",
+  );
+  const zipLookupSequence = useRef(0);
 
   function setValue<K extends keyof FiscalProfileValues>(
     field: K,
@@ -123,7 +127,7 @@ function FiscalProfileForm({
   }
 
   async function fillFromPublicData() {
-    setLookingUp(true);
+    setLookingUpCompany(true);
     setFormError(null);
     setNotice(null);
     try {
@@ -141,14 +145,118 @@ function FiscalProfileForm({
         city_name: company.address.city || current.city_name,
         state: company.address.state || current.state,
         zip_code: company.address.zip_code || current.zip_code,
+        country_code: "1058",
+        country_name: "Brasil",
       }));
+      if (company.address.city_code && company.address.zip_code) {
+        setResolvedZip(digits(company.address.zip_code, 8));
+      }
       setNotice(
         "Dados públicos aplicados ao perfil. Confira o endereço, a inscrição estadual e o regime antes de salvar.",
       );
     } catch (error) {
       setFormError(bffErrorMessage(error));
     } finally {
-      setLookingUp(false);
+      setLookingUpCompany(false);
+    }
+  }
+
+  function changeZipCode(value: string) {
+    const zipCode = digits(value, 8);
+    zipLookupSequence.current += 1;
+    setLookingUpZip(false);
+    setValues((current) => {
+      if (zipCode === current.zip_code) return current;
+      return {
+        ...current,
+        zip_code: zipCode,
+        street: "",
+        district: "",
+        city_code: "",
+        city_name: "",
+        state: "",
+        country_code: "1058",
+        country_name: "Brasil",
+      };
+    });
+    setResolvedZip("");
+    setFieldErrors((current) => {
+      const next = { ...current };
+      delete next.zip_code;
+      delete next.street;
+      delete next.district;
+      delete next.city_code;
+      delete next.city_name;
+      delete next.state;
+      return next;
+    });
+    setNotice(null);
+  }
+
+  async function fillFromZipCode() {
+    const zipCode = digits(values.zip_code, 8);
+    if (!zipCode) return;
+    if (zipCode.length !== 8) {
+      setFieldErrors((current) => ({
+        ...current,
+        zip_code: "Informe os 8 dígitos do CEP.",
+      }));
+      return;
+    }
+    if (
+      resolvedZip === zipCode &&
+      values.city_code.length === 7 &&
+      values.city_name &&
+      values.state
+    ) {
+      return;
+    }
+
+    setLookingUpZip(true);
+    const lookupSequence = ++zipLookupSequence.current;
+    setFormError(null);
+    setNotice(null);
+    try {
+      const address = await lookupPostalCode(zipCode);
+      if (lookupSequence !== zipLookupSequence.current) return;
+      setValues((current) => ({
+        ...current,
+        zip_code: address.zip_code,
+        street: address.street || current.street,
+        complement: address.complement || current.complement,
+        district: address.district || current.district,
+        city_code: address.city_code,
+        city_name: address.city_name,
+        state: address.state,
+        country_code: address.country_code,
+        country_name: address.country_name,
+      }));
+      setResolvedZip(address.zip_code);
+      setFieldErrors((current) => {
+        const next = { ...current };
+        delete next.zip_code;
+        delete next.street;
+        delete next.district;
+        delete next.city_code;
+        delete next.city_name;
+        delete next.state;
+        return next;
+      });
+      setNotice(
+        address.stale
+          ? "Endereço preenchido com o último dado disponível. Confira as informações antes de salvar."
+          : "Endereço preenchido automaticamente pelo CEP. Informe apenas o número e confira os dados.",
+      );
+    } catch (error) {
+      if (lookupSequence !== zipLookupSequence.current) return;
+      setFieldErrors((current) => ({
+        ...current,
+        zip_code: bffErrorMessage(error),
+      }));
+    } finally {
+      if (lookupSequence === zipLookupSequence.current) {
+        setLookingUpZip(false);
+      }
     }
   }
 
@@ -161,8 +269,9 @@ function FiscalProfileForm({
     for (const field of requiredFields) {
       if (!values[field].trim()) errors[field] = "Campo obrigatório.";
     }
-    if (values.city_code && digits(values.city_code, 7).length !== 7) {
-      errors.city_code = "Informe os 7 dígitos do código IBGE.";
+    if (digits(values.city_code, 7).length !== 7) {
+      errors.zip_code =
+        "Não foi possível identificar o município deste CEP. Consulte o CEP novamente.";
     }
     if (values.zip_code && digits(values.zip_code, 8).length !== 8) {
       errors.zip_code = "Informe os 8 dígitos do CEP.";
@@ -192,8 +301,8 @@ function FiscalProfileForm({
       city_name: values.city_name.trim(),
       state: values.state.trim().toUpperCase(),
       zip_code: digits(values.zip_code, 8),
-      country_code: values.country_code.trim(),
-      country_name: values.country_name.trim(),
+      country_code: "1058",
+      country_name: "Brasil",
       phone: nullable(values.phone),
       email: nullable(values.email),
       is_default: true,
@@ -248,11 +357,11 @@ function FiscalProfileForm({
           <button
             type="button"
             className="button button-secondary w-fit shrink-0"
-            disabled={lookingUp}
+            disabled={lookingUpCompany || lookingUpZip}
             onClick={fillFromPublicData}
           >
             <Search size={16} />
-            {lookingUp ? "Consultando..." : "Usar dados do CNPJ"}
+            {lookingUpCompany ? "Consultando..." : "Usar dados do CNPJ"}
           </button>
         </div>
 
@@ -304,6 +413,11 @@ function FiscalProfileForm({
 
           <fieldset className="border-t border-border pt-8">
             <legend className="text-base font-semibold">Endereço fiscal</legend>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Informe o CEP para preencher automaticamente logradouro, bairro,
+              município e UF. Os códigos fiscais são identificados e salvos sem
+              precisar de preenchimento manual.
+            </p>
             <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               <label className="lg:col-span-2">
                 <span className="field-label">Logradouro *</span>
@@ -326,32 +440,36 @@ function FiscalProfileForm({
               </label>
               <label>
                 <span className="field-label">CEP *</span>
-                <input value={values.zip_code} onChange={(event) => setValue("zip_code", digits(event.target.value, 8))} inputMode="numeric" className="field-input" placeholder="00000000" />
+                <input
+                  value={values.zip_code}
+                  onChange={(event) => changeZipCode(event.target.value)}
+                  onBlur={fillFromZipCode}
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  className="field-input"
+                  placeholder="00000000"
+                  aria-describedby="zip-code-help"
+                />
+                <span id="zip-code-help" className="mt-1.5 block text-xs text-muted-foreground">
+                  {lookingUpZip
+                    ? "Consultando endereço..."
+                    : "A consulta acontece automaticamente ao sair do campo."}
+                </span>
                 {inputError("zip_code")}
               </label>
               <label>
                 <span className="field-label">Município *</span>
-                <input value={values.city_name} onChange={(event) => setValue("city_name", event.target.value)} className="field-input" />
+                <input value={values.city_name} className="field-input bg-muted" readOnly />
                 {inputError("city_name")}
               </label>
               <label>
-                <span className="field-label">Código IBGE *</span>
-                <input value={values.city_code} onChange={(event) => setValue("city_code", digits(event.target.value, 7))} inputMode="numeric" className="field-input" placeholder="0000000" />
-                {inputError("city_code")}
-              </label>
-              <label>
                 <span className="field-label">UF *</span>
-                <input value={values.state} onChange={(event) => setValue("state", event.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2))} className="field-input" placeholder="PR" />
+                <input value={values.state} className="field-input bg-muted" readOnly />
                 {inputError("state")}
               </label>
               <label>
-                <span className="field-label">Código do país *</span>
-                <input value={values.country_code} onChange={(event) => setValue("country_code", digits(event.target.value, 4))} inputMode="numeric" className="field-input" />
-                {inputError("country_code")}
-              </label>
-              <label>
                 <span className="field-label">País *</span>
-                <input value={values.country_name} onChange={(event) => setValue("country_name", event.target.value)} className="field-input" />
+                <input value={values.country_name} className="field-input bg-muted" readOnly />
                 {inputError("country_name")}
               </label>
             </div>
@@ -374,7 +492,7 @@ function FiscalProfileForm({
       </section>
 
       <div className="flex justify-end">
-        <button type="submit" className="button button-primary min-h-11 min-w-44" disabled={saving}>
+        <button type="submit" className="button button-primary min-h-11 min-w-44" disabled={saving || lookingUpZip || lookingUpCompany}>
           <Save size={17} /> {saving ? "Salvando..." : initialProfile ? "Salvar perfil fiscal" : "Criar perfil fiscal"}
         </button>
       </div>
@@ -410,7 +528,6 @@ export function ClientFiscalProfileSection({ client }: { client: ClientRecord })
 
   return (
     <FiscalProfileForm
-      key={data?.updated_at ?? "new"}
       client={client}
       initialProfile={data ?? null}
       onSaved={(profile) => mutate(profile, { revalidate: false })}
