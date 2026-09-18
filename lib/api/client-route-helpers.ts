@@ -74,13 +74,13 @@ export function parseUpdateClientPayload(value: unknown): UpdateClientPayload | 
 export function clientApiErrorResponse(operation: string, error: unknown) {
   logApiError(operation, error);
 
-  if (hasApiStatus(error, 401, 403)) {
+  if (hasApiStatus(error, 401)) {
     return NextResponse.json({ error: "Sessão expirada." }, { status: 401 });
   }
   if (
     axios.isAxiosError(error) &&
     error.response &&
-    [400, 404, 409, 503].includes(error.response.status) &&
+    [400, 403, 404, 409, 503].includes(error.response.status) &&
     isObject(error.response.data)
   ) {
     return NextResponse.json(error.response.data, {
@@ -89,6 +89,12 @@ export function clientApiErrorResponse(operation: string, error: unknown) {
   }
   if (hasApiStatus(error, 404)) {
     return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
+  }
+  if (hasApiStatus(error, 403)) {
+    return NextResponse.json(
+      { error: "forbidden", message: "Você não tem permissão para realizar esta alteração." },
+      { status: 403 },
+    );
   }
 
   return NextResponse.json(
