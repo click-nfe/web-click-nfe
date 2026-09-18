@@ -377,7 +377,7 @@ function FiscalProfileForm({
             </p>
           ) : null}
 
-          <fieldset>
+          <fieldset disabled={lookingUpCompany}>
             <legend className="text-base font-semibold">Identificação fiscal</legend>
             <div className="mt-5 grid gap-5 md:grid-cols-2">
               <label>
@@ -411,7 +411,11 @@ function FiscalProfileForm({
             </div>
           </fieldset>
 
-          <fieldset className="border-t border-border pt-8">
+          <fieldset
+            className="border-t border-border pt-8 disabled:opacity-75"
+            disabled={lookingUpCompany || lookingUpZip}
+            aria-busy={lookingUpCompany || lookingUpZip}
+          >
             <legend className="text-base font-semibold">Endereço fiscal</legend>
             <p className="mt-2 text-sm text-muted-foreground">
               Informe o CEP para preencher automaticamente logradouro, bairro,
