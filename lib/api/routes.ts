@@ -36,6 +36,14 @@ export const routes = {
         `/clients/${resourceId(id)}/fiscal-certificates/${resourceId(certificateId)}/validate`,
       fiscalCertificateActivate: (id: string, certificateId: string) =>
         `/clients/${resourceId(id)}/fiscal-certificates/${resourceId(certificateId)}/activate`,
+      importTaxRules: (id: string) =>
+        `/clients/${resourceId(id)}/import-tax-rules`,
+      importTaxRule: (id: string, ruleId: string) =>
+        `/clients/${resourceId(id)}/import-tax-rules/${resourceId(ruleId)}`,
+      importTaxRuleDiagnostics: (id: string) =>
+        `/clients/${resourceId(id)}/import-tax-rules/diagnostics`,
+      importTaxRuleSimulation: (id: string) =>
+        `/clients/${resourceId(id)}/import-tax-rules/simulate`,
     },
     fiscalReference: {
       postalCode: (zipCode: string) =>
@@ -75,6 +83,14 @@ export const routes = {
         `/api/clients/${resourceId(id)}/fiscal-certificates/${resourceId(certificateId)}/validate`,
       fiscalCertificateActivate: (id: string, certificateId: string) =>
         `/api/clients/${resourceId(id)}/fiscal-certificates/${resourceId(certificateId)}/activate`,
+      importTaxRules: (id: string) =>
+        `/api/clients/${resourceId(id)}/import-tax-rules`,
+      importTaxRule: (id: string, ruleId: string) =>
+        `/api/clients/${resourceId(id)}/import-tax-rules/${resourceId(ruleId)}`,
+      importTaxRuleDiagnostics: (id: string) =>
+        `/api/clients/${resourceId(id)}/import-tax-rules/diagnostics`,
+      importTaxRuleSimulation: (id: string) =>
+        `/api/clients/${resourceId(id)}/import-tax-rules/simulate`,
     },
     fiscalReference: {
       postalCode: (zipCode: string) =>

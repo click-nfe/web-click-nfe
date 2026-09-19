@@ -22,6 +22,7 @@ import useSWR from "swr";
 import { ClientForm } from "@/components/dashboard/client-form";
 import { ClientCertificates } from "@/components/dashboard/client-certificates";
 import { ClientFiscalProfileSection } from "@/components/dashboard/client-fiscal-profile-form";
+import { ClientTaxRules } from "@/components/dashboard/client-tax-rules";
 import type { ClientRecord } from "@/lib/api/client-record";
 import type { ImportProcessListResponse } from "@/lib/api/import-process";
 import { routes } from "@/lib/api/routes";
@@ -193,7 +194,8 @@ function ClientOverview({ client }: { client: ClientRecord }) {
             icon={Scale}
             title="Regras tributárias"
             description="Regras por NCM, UF, modalidade, finalidade e enquadramento tributário."
-            status="Pré-montado"
+            status="Disponível"
+            available
           />
           <ConfigurationCard
             clientId={client.id}
@@ -258,72 +260,6 @@ function ClientOverview({ client }: { client: ClientRecord }) {
         )}
       </section>
     </div>
-  );
-}
-
-const placeholderContent: Record<
-  Extract<ClientProfileSection, "tax-rules">,
-  {
-    icon: LucideIcon;
-    eyebrow: string;
-    title: string;
-    description: string;
-    items: string[];
-    note: string;
-  }
-> = {
-  "tax-rules": {
-    icon: Scale,
-    eyebrow: "Automação tributária",
-    title: "Regras tributárias",
-    description:
-      "Esta área permitirá manter as regras que resolvem automaticamente a tributação dos itens importados.",
-    items: [
-      "prioridade e vigência das regras",
-      "filtros por NCM, UF, modalidade e finalidade",
-      "CFOP, origem e CST de ICMS, IPI, PIS e COFINS",
-      "diagnóstico de conflitos, lacunas e regra selecionada",
-    ],
-    note: "A edição será habilitada quando concluirmos os formulários e validações fiscais correspondentes.",
-  },
-};
-
-function PlannedSection({ section }: { section: keyof typeof placeholderContent }) {
-  const content = placeholderContent[section];
-  const Icon = content.icon;
-
-  return (
-    <section className="surface-card mt-8 overflow-hidden">
-      <div className="border-b border-border p-6 sm:p-8">
-        <span className="grid size-12 place-items-center rounded-xl bg-sage-soft text-sage-strong">
-          <Icon size={23} />
-        </span>
-        <p className="eyebrow mt-5">{content.eyebrow}</p>
-        <h2 className="mt-3 text-2xl font-semibold">{content.title}</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-          {content.description}
-        </p>
-      </div>
-      <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_20rem]">
-        <div>
-          <h3 className="text-sm font-semibold">Escopo previsto</h3>
-          <ul className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-            {content.items.map((item) => (
-              <li key={item} className="flex gap-2 rounded-xl border border-border p-4">
-                <CheckCircle2 className="mt-0.5 shrink-0 text-sage-strong" size={16} />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <aside className="rounded-xl bg-muted/60 p-5">
-          <span className="rounded-full bg-background px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-            Pré-implementação
-          </span>
-          <p className="mt-4 text-sm leading-6 text-muted-foreground">{content.note}</p>
-        </aside>
-      </div>
-    </section>
   );
 }
 
@@ -500,7 +436,7 @@ export function ClientProfile({
         />
       ) : null}
       {section === "certificates" ? <ClientCertificates clientId={client.id} /> : null}
-      {section === "tax-rules" ? <PlannedSection section={section} /> : null}
+      {section === "tax-rules" ? <ClientTaxRules client={client} /> : null}
       {section === "fiscal-profile" ? (
         <ClientFiscalProfileSection client={client} />
       ) : null}
