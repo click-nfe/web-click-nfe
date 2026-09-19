@@ -20,6 +20,7 @@ import Link from "next/link";
 import useSWR from "swr";
 
 import { ClientForm } from "@/components/dashboard/client-form";
+import { ClientCertificates } from "@/components/dashboard/client-certificates";
 import { ClientFiscalProfileSection } from "@/components/dashboard/client-fiscal-profile-form";
 import type { ClientRecord } from "@/lib/api/client-record";
 import type { ImportProcessListResponse } from "@/lib/api/import-process";
@@ -174,7 +175,8 @@ function ClientOverview({ client }: { client: ClientRecord }) {
             icon={FileKey2}
             title="Certificados eCNPJ"
             description="Upload, validação, vigência e ativação do certificado A1 utilizado na assinatura."
-            status="Pré-montado"
+            status="Disponível"
+            available
           />
           <ConfigurationCard
             clientId={client.id}
@@ -260,7 +262,7 @@ function ClientOverview({ client }: { client: ClientRecord }) {
 }
 
 const placeholderContent: Record<
-  Exclude<ClientProfileSection, "overview" | "registration" | "fiscal-profile" | "processes">,
+  Extract<ClientProfileSection, "tax-rules">,
   {
     icon: LucideIcon;
     eyebrow: string;
@@ -270,20 +272,6 @@ const placeholderContent: Record<
     note: string;
   }
 > = {
-  certificates: {
-    icon: FileKey2,
-    eyebrow: "Assinatura digital",
-    title: "Certificados eCNPJ A1",
-    description:
-      "Esta área concentrará os certificados .pfx ou .p12 usados para assinar as notas do cliente.",
-    items: [
-      "upload do certificado e identificação segura da senha",
-      "validação do CNPJ, cadeia, vigência e finalidade",
-      "ativação de um certificado por ambiente e histórico de substituições",
-      "armazenamento futuro do segredo fora do banco de dados",
-    ],
-    note: "O upload ficará desabilitado até concluirmos o fluxo seguro de armazenamento e validação no backend.",
-  },
   "tax-rules": {
     icon: Scale,
     eyebrow: "Automação tributária",
@@ -511,10 +499,8 @@ export function ClientProfile({
           onUpdated={(updated) => mutate(updated, { revalidate: false })}
         />
       ) : null}
-      {section === "certificates" ||
-      section === "tax-rules" ? (
-        <PlannedSection section={section} />
-      ) : null}
+      {section === "certificates" ? <ClientCertificates clientId={client.id} /> : null}
+      {section === "tax-rules" ? <PlannedSection section={section} /> : null}
       {section === "fiscal-profile" ? (
         <ClientFiscalProfileSection client={client} />
       ) : null}
