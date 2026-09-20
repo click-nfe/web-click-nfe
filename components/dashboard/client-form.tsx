@@ -99,10 +99,12 @@ export function ClientForm({
   initialClient,
   initialNotice,
   onUpdated,
+  onCancel,
 }: {
   initialClient?: ClientRecord;
   initialNotice?: string;
   onUpdated?: (client: ClientRecord) => void;
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const [values, setValues] = useState<ClientFormValues>(() =>
@@ -452,12 +454,18 @@ export function ClientForm({
       </section>
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <Link
-          href={editing ? `/dashboard/clientes/${initialClient?.id}` : "/dashboard/clientes"}
-          className="button button-secondary min-h-11"
-        >
-          Cancelar
-        </Link>
+        {onCancel ? (
+          <button type="button" onClick={onCancel} className="button button-secondary min-h-11">
+            Cancelar
+          </button>
+        ) : (
+          <Link
+            href={editing ? `/dashboard/clientes/${initialClient?.id}` : "/dashboard/clientes"}
+            className="button button-secondary min-h-11"
+          >
+            Cancelar
+          </Link>
+        )}
         <button type="submit" disabled={saving} className="button button-primary min-h-11 sm:min-w-40">
           <Save size={17} /> {saving ? "Salvando..." : editing ? "Salvar alterações" : "Cadastrar cliente"}
         </button>

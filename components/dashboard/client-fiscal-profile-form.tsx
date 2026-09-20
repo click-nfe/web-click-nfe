@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { CheckCircle2, RefreshCw, Save, Search } from "lucide-react";
+import { CheckCircle2, Pencil, Plus, RefreshCw, Save, Search } from "lucide-react";
 import { useRef, useState } from "react";
 import useSWR from "swr";
 
@@ -18,6 +18,7 @@ import {
 import { lookupClientCompany } from "@/lib/bff/clients";
 import { lookupPostalCode } from "@/lib/bff/fiscal-reference";
 import { cnpjCharacters, formatCnpj } from "@/lib/client-display";
+import { Sheet } from "@/components/ui/sheet";
 
 type FiscalProfileValues = {
   legal_name: string;
@@ -95,10 +96,12 @@ function FiscalProfileForm({
   client,
   initialProfile,
   onSaved,
+  embedded = false,
 }: {
   client: ClientRecord;
   initialProfile: ClientFiscalProfile | null;
   onSaved: (profile: ClientFiscalProfile) => void;
+  embedded?: boolean;
 }) {
   const [values, setValues] = useState(() => valuesFrom(client, initialProfile));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -344,15 +347,11 @@ function FiscalProfileForm({
     ) : null;
 
   return (
-    <form onSubmit={submit} className="mt-8 space-y-6" noValidate>
-      <section className="surface-card overflow-hidden">
-        <div className="flex flex-col gap-4 border-b border-border p-6 sm:flex-row sm:items-start sm:justify-between sm:p-8">
+    <form onSubmit={submit} className={embedded ? "space-y-6 py-7" : "mt-8 space-y-6"} noValidate>
+      <section className={embedded ? "" : "surface-card overflow-hidden"}>
+        <div className={`flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between ${embedded ? "border-b border-border pb-6" : "border-b border-border p-6 sm:p-8"}`}>
           <div>
-            <p className="eyebrow">Parâmetros do emitente</p>
-            <h2 className="mt-3 text-2xl font-semibold">Perfil fiscal</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              Estes dados identificam o emitente nos rascunhos e no XML da NF-e. O perfil também é necessário antes de cadastrar o eCNPJ.
-            </p>
+            <p className="text-sm leading-6 text-muted-foreground">Use a consulta pública para reduzir o preenchimento manual e confira os dados antes de salvar.</p>
           </div>
           <button
             type="button"
@@ -365,7 +364,7 @@ function FiscalProfileForm({
           </button>
         </div>
 
-        <div className="space-y-8 p-6 sm:p-8">
+        <div className={`space-y-8 ${embedded ? "py-7" : "p-6 sm:p-8"}`}>
           {notice ? (
             <div className="flex items-start gap-3 rounded-xl bg-sage-soft px-4 py-3 text-sm text-sage-strong" role="status">
               <CheckCircle2 className="mt-0.5 shrink-0" size={17} /> {notice}
@@ -495,7 +494,7 @@ function FiscalProfileForm({
         </div>
       </section>
 
-      <div className="flex justify-end">
+      <div className={`flex justify-end ${embedded ? "sticky bottom-0 border-t border-border bg-background py-5" : ""}`}>
         <button type="submit" className="button button-primary min-h-11 min-w-44" disabled={saving || lookingUpZip || lookingUpCompany}>
           <Save size={17} /> {saving ? "Salvando..." : initialProfile ? "Salvar perfil fiscal" : "Criar perfil fiscal"}
         </button>
@@ -509,6 +508,7 @@ export function ClientFiscalProfileSection({ client }: { client: ClientRecord })
     ["client-fiscal-profile", client.id],
     () => getClientFiscalProfile(client.id),
   );
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -530,11 +530,69 @@ export function ClientFiscalProfileSection({ client }: { client: ClientRecord })
     );
   }
 
+  const profile = data ?? null;
+  const address = profile
+    ? [profile.street, profile.number, profile.complement, profile.district, `${profile.city_name}/${profile.state}`, profile.zip_code]
+        .filter(Boolean)
+        .join(", ")
+    : null;
+  const taxRegime = profile?.tax_regime === "1"
+    ? "Simples Nacional"
+    : profile?.tax_regime === "2"
+      ? "Simples Nacional — excesso de sublimite"
+      : profile?.tax_regime === "3"
+        ? "Regime Normal"
+        : "Não informado";
+
   return (
-    <FiscalProfileForm
-      client={client}
-      initialProfile={data ?? null}
-      onSaved={(profile) => mutate(profile, { revalidate: false })}
-    />
+    <div className="mt-8">
+      <section className="surface-card overflow-hidden">
+        <div className="flex flex-col gap-5 border-b border-border p-6 sm:flex-row sm:items-start sm:justify-between sm:p-8">
+          <div>
+            <p className="eyebrow">Parâmetros do emitente</p>
+            <h2 className="mt-3 text-2xl font-semibold">Perfil fiscal</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Dados utilizados nos rascunhos e no XML da NF-e.</p>
+          </div>
+          <button type="button" className="button button-primary shrink-0" onClick={() => setSheetOpen(true)}>
+            {profile ? <Pencil size={16} /> : <Plus size={16} />}
+            {profile ? "Editar perfil" : "Criar perfil fiscal"}
+          </button>
+        </div>
+        {profile ? (
+          <div className="space-y-7 p-6 sm:p-8">
+            <dl className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                ["Razão social", profile.legal_name],
+                ["Nome fantasia", profile.trade_name || "Não informado"],
+                ["CNPJ", formatCnpj(profile.cnpj)],
+                ["Inscrição estadual", profile.state_registration || "Não informada"],
+                ["Regime tributário", taxRegime],
+                ["País", profile.country_name],
+              ].map(([label, value]) => (
+                <div key={label}><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1.5 text-sm font-medium">{value}</dd></div>
+              ))}
+            </dl>
+            <dl className="grid gap-6 border-t border-border pt-6 md:grid-cols-2">
+              <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Endereço fiscal</dt><dd className="mt-1.5 text-sm font-medium">{address}</dd></div>
+              <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contato fiscal</dt><dd className="mt-1.5 text-sm font-medium">{[profile.email, profile.phone].filter(Boolean).join(" · ") || "Não informado"}</dd></div>
+            </dl>
+          </div>
+        ) : (
+          <div className="p-12 text-center"><p className="font-medium">Perfil fiscal ainda não configurado.</p><p className="mt-2 text-sm text-muted-foreground">Crie o perfil para habilitar os dados do emitente nas próximas etapas da NF-e.</p></div>
+        )}
+      </section>
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen} title={profile ? "Editar perfil fiscal" : "Criar perfil fiscal"} description="Os códigos fiscais de município e país são resolvidos automaticamente a partir do CEP.">
+        <FiscalProfileForm
+          key={profile?.updated_at ?? "new"}
+          client={client}
+          initialProfile={profile}
+          embedded
+          onSaved={(saved) => {
+            mutate(saved, { revalidate: false });
+            setSheetOpen(false);
+          }}
+        />
+      </Sheet>
+    </div>
   );
 }

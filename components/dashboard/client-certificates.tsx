@@ -7,6 +7,7 @@ import {
   RefreshCw,
   ShieldCheck,
   Upload,
+  Plus,
 } from "lucide-react";
 import { FormEvent, useRef, useState } from "react";
 import useSWR from "swr";
@@ -24,6 +25,7 @@ import {
   validateFiscalCertificate,
 } from "@/lib/bff/fiscal-certificate";
 import { formatCnpj } from "@/lib/client-display";
+import { Sheet } from "@/components/ui/sheet";
 
 const statusLabels: Record<FiscalCertificateStatus, string> = {
   pending_validation: "Validado, aguardando ativação",
@@ -74,6 +76,7 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
   const [actionId, setActionId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -97,6 +100,7 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
         "Certificado validado e armazenado. Ative-o quando quiser usá-lo na assinatura.",
       );
       await mutate();
+      setSheetOpen(false);
     } catch (uploadError) {
       setPassword("");
       setFormError(bffErrorMessage(uploadError));
@@ -133,92 +137,27 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
   return (
     <div className="mt-8 space-y-6">
       <section className="surface-card overflow-hidden">
-        <div className="border-b border-border p-6 sm:p-8">
-          <p className="eyebrow">Assinatura digital</p>
-          <h2 className="mt-3 text-2xl font-semibold">Certificados eCNPJ A1</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Envie um arquivo .pfx ou .p12. O CNPJ, a senha, a validade e a chave de
-            assinatura são conferidos antes do armazenamento.
-          </p>
-        </div>
-
-        <form onSubmit={handleUpload} className="grid gap-5 p-6 sm:p-8 lg:grid-cols-2">
-          <label className="grid gap-2 text-sm font-semibold">
-            Certificado A1
-            <input
-              ref={fileInput}
-              type="file"
-              name="certificate"
-              accept=".pfx,.p12,application/x-pkcs12"
-              className="min-h-12 rounded-xl border border-border bg-background px-4 py-3 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-sage-soft file:px-3 file:py-1.5 file:font-semibold file:text-sage-strong"
-              disabled={uploading || actionId !== null}
-              required
-            />
-            <span className="text-xs font-normal text-muted-foreground">
-              Tamanho máximo: 2 MB.
-            </span>
-          </label>
-          <label className="grid gap-2 text-sm font-semibold">
-            Senha do certificado
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="new-password"
-              className="min-h-12 rounded-xl border border-border bg-background px-4 outline-none ring-primary/20 focus:ring-4"
-              disabled={uploading || actionId !== null}
-              required
-            />
-            <span className="text-xs font-normal text-muted-foreground">
-              A senha não retorna pela API nem é armazenada no banco.
-            </span>
-          </label>
-          <label className="grid gap-2 text-sm font-semibold">
-            Ambiente
-            <select
-              value={environment}
-              onChange={(event) =>
-                setEnvironment(event.target.value as FiscalCertificateEnvironment)
-              }
-              className="min-h-12 rounded-xl border border-border bg-background px-4 outline-none ring-primary/20 focus:ring-4"
-              disabled={uploading || actionId !== null}
-            >
-              <option value="homologation">Homologação</option>
-              <option value="production">Produção</option>
-            </select>
-          </label>
-          <div className="flex items-end">
-            <button type="submit" className="button button-primary" disabled={uploading || actionId !== null}>
-              {uploading ? (
-                <><LoaderCircle className="animate-spin" size={16} /> Validando...</>
-              ) : (
-                <><Upload size={16} /> Enviar e validar</>
-              )}
-            </button>
-          </div>
-          {formError ? (
-            <p className="text-sm text-destructive lg:col-span-2" role="alert">
-              {formError}
-            </p>
-          ) : null}
-          {notice ? (
-            <p className="flex items-center gap-2 text-sm text-sage-strong lg:col-span-2" role="status">
-              <CheckCircle2 size={16} /> {notice}
-            </p>
-          ) : null}
-        </form>
-      </section>
-
-      <section className="surface-card overflow-hidden">
         <div className="flex items-center justify-between gap-4 border-b border-border p-6 sm:p-8">
           <div>
-            <h2 className="text-lg font-semibold">Certificados cadastrados</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Somente um certificado pode ficar ativo por ambiente.
+            <p className="eyebrow">Assinatura digital</p>
+            <h2 className="mt-3 text-2xl font-semibold">Certificados eCNPJ A1</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Certificados cadastrados para homologação e produção. Somente um pode ficar ativo por ambiente.
             </p>
           </div>
-          <ShieldCheck className="shrink-0 text-sage-strong" size={24} />
+          <button type="button" className="button button-primary shrink-0" onClick={() => { setFormError(null); setSheetOpen(true); }}>
+            <Plus size={16} /> Adicionar certificado
+          </button>
         </div>
+
+        {notice ? (
+          <p className="mx-6 mt-6 flex items-center gap-2 rounded-xl bg-sage-soft p-4 text-sm text-sage-strong sm:mx-8" role="status">
+            <CheckCircle2 size={16} /> {notice}
+          </p>
+        ) : null}
+        {!sheetOpen && formError ? (
+          <p className="mx-6 mt-6 rounded-xl bg-destructive/10 p-4 text-sm text-destructive sm:mx-8" role="alert">{formError}</p>
+        ) : null}
 
         {error ? (
           <div className="p-10 text-center">
@@ -290,11 +229,53 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
             <FileKey2 className="mx-auto text-sage-strong" size={32} />
             <p className="mt-4 font-medium">Nenhum certificado cadastrado.</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Use o formulário acima para enviar o primeiro eCNPJ A1.
+              Adicione o primeiro eCNPJ A1 para preparar a assinatura das notas.
             </p>
           </div>
         )}
       </section>
+
+      <Sheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        title="Adicionar certificado eCNPJ A1"
+        description="O arquivo e a senha são validados antes do armazenamento. A senha nunca retorna pela API."
+      >
+        <form onSubmit={handleUpload} className="space-y-6 py-7">
+          <label className="grid gap-2 text-sm font-semibold">
+            Certificado A1
+            <input
+              ref={fileInput}
+              type="file"
+              name="certificate"
+              accept=".pfx,.p12,application/x-pkcs12"
+              className="min-h-12 rounded-xl border border-border bg-background px-4 py-3 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-sage-soft file:px-3 file:py-1.5 file:font-semibold file:text-sage-strong"
+              disabled={uploading || actionId !== null}
+              required
+            />
+            <span className="text-xs font-normal text-muted-foreground">Formatos .pfx ou .p12, com até 2 MB.</span>
+          </label>
+          <label className="grid gap-2 text-sm font-semibold">
+            Senha do certificado
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" className="field-input" disabled={uploading || actionId !== null} required />
+            <span className="text-xs font-normal text-muted-foreground">A senha não retorna pela API nem é armazenada no banco.</span>
+          </label>
+          <label className="grid gap-2 text-sm font-semibold">
+            Ambiente
+            <select value={environment} onChange={(event) => setEnvironment(event.target.value as FiscalCertificateEnvironment)} className="field-input" disabled={uploading || actionId !== null}>
+              <option value="homologation">Homologação</option>
+              <option value="production">Produção</option>
+            </select>
+          </label>
+          {formError ? <p className="text-sm text-destructive" role="alert">{formError}</p> : null}
+          <div className="sticky bottom-0 flex justify-end gap-3 border-t border-border bg-background py-5">
+            <button type="button" className="button button-secondary" onClick={() => setSheetOpen(false)} disabled={uploading}>Cancelar</button>
+            <button type="submit" className="button button-primary" disabled={uploading || actionId !== null}>
+              {uploading ? <><LoaderCircle className="animate-spin" size={16} /> Validando...</> : <><Upload size={16} /> Enviar e validar</>}
+            </button>
+          </div>
+        </form>
+      </Sheet>
     </div>
   );
 }
