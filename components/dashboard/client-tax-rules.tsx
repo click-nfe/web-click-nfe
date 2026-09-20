@@ -44,6 +44,7 @@ import {
   simulateClientImportTaxRule,
   updateClientImportTaxRule,
 } from "@/lib/bff/client-import-tax-rule";
+import { Sheet } from "@/components/ui/sheet";
 
 const purposeLabels: Record<ImportPurpose, string> = {
   resale: "Comercialização",
@@ -82,10 +83,15 @@ const mismatchLabels: Record<string, string> = {
 
 const icmsCstLabels: Record<string, string> = {
   "00": "00 — Tributada integralmente",
+  "10": "10 — Tributada com cobrança por ST",
+  "20": "20 — Com redução de base de cálculo",
+  "30": "30 — Isenta ou não tributada com cobrança por ST",
   "40": "40 — Isenta",
   "41": "41 — Não tributada",
   "50": "50 — Suspensão",
   "51": "51 — Diferimento",
+  "60": "60 — ICMS cobrado anteriormente por ST",
+  "70": "70 — Redução de base com cobrança por ST",
   "90": "90 — Outras",
 };
 
@@ -125,6 +131,13 @@ type RuleFormValues = {
   icmsRate: string;
   baseReductionRate: string;
   defermentRate: string;
+  stBaseMethod: "4" | "6";
+  stMvaRate: string;
+  stBaseReductionRate: string;
+  stRate: string;
+  retainedStBase: string;
+  retainedStRate: string;
+  retainedStValue: string;
   taxTreatmentConfirmed: boolean;
 };
 
@@ -178,6 +191,13 @@ function formValues(
     icmsRate: String(configuration?.icms_rate ?? ""),
     baseReductionRate: String(configuration?.icms_base_reduction_rate ?? ""),
     defermentRate: String(configuration?.icms_deferment_rate ?? ""),
+    stBaseMethod: configuration?.icms_st_base_method === "6" ? "6" : "4",
+    stMvaRate: String(configuration?.icms_st_mva_rate ?? ""),
+    stBaseReductionRate: String(configuration?.icms_st_base_reduction_rate ?? ""),
+    stRate: String(configuration?.icms_st_rate ?? ""),
+    retainedStBase: String(configuration?.icms_st_retained_base ?? ""),
+    retainedStRate: String(configuration?.icms_st_retained_rate ?? ""),
+    retainedStValue: String(configuration?.icms_st_retained_value ?? ""),
     taxTreatmentConfirmed: Boolean(
       configuration?.icms_tax_treatment_confirmed,
     ),
@@ -218,18 +238,30 @@ function scopeDescription(rule: ClientImportTaxRule) {
   return rule.ncm_patterns.join(", ");
 }
 
+function icmsDescription(configuration: ImportTaxConfiguration) {
+  const parts = [`CST ${configuration.icms_cst}`];
+  if (configuration.icms_rate) parts.push(`${configuration.icms_rate}% próprio`);
+  if (configuration.icms_base_reduction_rate) parts.push(`redução ${configuration.icms_base_reduction_rate}%`);
+  if (configuration.icms_st_rate) parts.push(`ST ${configuration.icms_st_rate}%`);
+  if (configuration.icms_st_mva_rate) parts.push(`MVA ${configuration.icms_st_mva_rate}%`);
+  if (configuration.icms_st_retained_value) parts.push(`ST retido R$ ${configuration.icms_st_retained_value}`);
+  return parts.join(" · ");
+}
+
 function RuleForm({
   client,
   profile,
   rule,
   onCancel,
   onSaved,
+  embedded = false,
 }: {
   client: ClientRecord;
   profile: ClientFiscalProfile | null;
   rule: ClientImportTaxRule | null;
   onCancel: () => void;
   onSaved: (message: string) => Promise<void>;
+  embedded?: boolean;
 }) {
   const [values, setValues] = useState(() => formValues(rule, profile, client));
   const [saving, setSaving] = useState(false);
@@ -270,9 +302,48 @@ function RuleForm({
       return "Capítulos e posições devem possuir entre 2 e 7 dígitos.";
     }
 
+    const ownRateRequired = ["00", "10", "20", "70", "90"].includes(values.icmsCst);
+    const reductionRequired = ["20", "70"].includes(values.icmsCst);
+    const usesSt = ["10", "30", "70"].includes(values.icmsCst);
+    const retainedSt = values.icmsCst === "60";
+    const numericValue = (value: string) => Number(optionalRate(value));
+    const validRange = (value: string, minimum: number, maximum: number) => {
+      if (!value.trim()) return false;
+      const parsed = numericValue(value);
+      return Number.isFinite(parsed) && parsed >= minimum && parsed <= maximum;
+    };
+    if (ownRateRequired && !validRange(values.icmsRate, 0.0001, 100)) {
+      return "Informe uma alíquota nominal maior que zero e de até 100%.";
+    }
+    if (!ownRateRequired && ["51"].includes(values.icmsCst) && values.icmsRate && !validRange(values.icmsRate, 0, 100)) {
+      return "A alíquota nominal deve estar entre 0% e 100%.";
+    }
+    if (reductionRequired && !validRange(values.baseReductionRate, 0.0001, 100)) {
+      return "Para este CST, informe a redução da base de cálculo.";
+    }
+    if (values.icmsCst === "51" && values.baseReductionRate && !validRange(values.baseReductionRate, 0, 100)) {
+      return "A redução da base deve estar entre 0% e 100%.";
+    }
+    if (values.icmsCst === "51" && values.defermentRate && !validRange(values.defermentRate, 0, 100)) {
+      return "O diferimento deve estar entre 0% e 100%.";
+    }
+    if (usesSt) {
+      if (!validRange(values.stRate, 0.0001, 100)) return "Informe a alíquota do ICMS-ST.";
+      if (values.stBaseMethod === "4" && !validRange(values.stMvaRate, 0, 999.9999)) {
+        return "Informe a margem de valor agregado (MVA) para a base de ICMS-ST.";
+      }
+      if (values.stBaseReductionRate && !validRange(values.stBaseReductionRate, 0, 100)) {
+        return "A redução da base de ICMS-ST deve estar entre 0% e 100%.";
+      }
+    }
+    if (retainedSt) {
+      if (!validRange(values.retainedStBase, 0, Number.MAX_SAFE_INTEGER)) return "Informe a base de ICMS-ST retido.";
+      if (!validRange(values.retainedStRate, 0, 100)) return "Informe a alíquota de ICMS-ST retido.";
+      if (!validRange(values.retainedStValue, 0, Number.MAX_SAFE_INTEGER)) return "Informe o valor de ICMS-ST retido.";
+    }
     const reduction = Number(optionalRate(values.baseReductionRate) || 0);
     const deferment = Number(optionalRate(values.defermentRate) || 0);
-    if (reduction > 0 && deferment > 0) {
+    if (values.icmsCst === "51" && reduction > 0 && deferment > 0) {
       return "Redução de base e diferimento não podem ser aplicados juntos.";
     }
     if (
@@ -300,17 +371,42 @@ function RuleForm({
       icms_cst: values.icmsCst,
       icms_tax_treatment_confirmed: values.taxTreatmentConfirmed,
     };
-    const exempt = ["40", "41", "50"].includes(values.icmsCst);
+    const ownRate = ["00", "10", "20", "51", "70", "90"].includes(values.icmsCst);
+    const ownReduction = ["20", "51", "70"].includes(values.icmsCst);
+    const usesSt = ["10", "30", "70"].includes(values.icmsCst);
+    const retainedSt = values.icmsCst === "60";
     const rate = optionalRate(values.icmsRate);
     const reduction = optionalRate(values.baseReductionRate);
     const deferment = optionalRate(values.defermentRate);
 
-    if (!exempt && rate) configuration.icms_rate = rate;
+    if (ownRate && rate) configuration.icms_rate = rate;
     else delete configuration.icms_rate;
-    if (!exempt && reduction) configuration.icms_base_reduction_rate = reduction;
+    if (ownReduction && reduction) configuration.icms_base_reduction_rate = reduction;
     else delete configuration.icms_base_reduction_rate;
-    if (!exempt && deferment) configuration.icms_deferment_rate = deferment;
+    if (values.icmsCst === "51" && deferment) configuration.icms_deferment_rate = deferment;
     else delete configuration.icms_deferment_rate;
+    if (usesSt) {
+      configuration.icms_st_base_method = values.stBaseMethod;
+      configuration.icms_st_rate = optionalRate(values.stRate);
+      if (values.stBaseMethod === "4") configuration.icms_st_mva_rate = optionalRate(values.stMvaRate);
+      else delete configuration.icms_st_mva_rate;
+      if (values.stBaseReductionRate.trim()) configuration.icms_st_base_reduction_rate = optionalRate(values.stBaseReductionRate);
+      else delete configuration.icms_st_base_reduction_rate;
+    } else {
+      delete configuration.icms_st_base_method;
+      delete configuration.icms_st_rate;
+      delete configuration.icms_st_mva_rate;
+      delete configuration.icms_st_base_reduction_rate;
+    }
+    if (retainedSt) {
+      configuration.icms_st_retained_base = optionalRate(values.retainedStBase);
+      configuration.icms_st_retained_rate = optionalRate(values.retainedStRate);
+      configuration.icms_st_retained_value = optionalRate(values.retainedStValue);
+    } else {
+      delete configuration.icms_st_retained_base;
+      delete configuration.icms_st_retained_rate;
+      delete configuration.icms_st_retained_value;
+    }
 
     const payload: ClientImportTaxRulePayload = {
       name: values.name.trim(),
@@ -345,11 +441,14 @@ function RuleForm({
     }
   }
 
-  const exempt = ["40", "41", "50"].includes(values.icmsCst);
+  const ownRate = ["00", "10", "20", "51", "70", "90"].includes(values.icmsCst);
+  const ownReduction = ["20", "51", "70"].includes(values.icmsCst);
+  const usesSt = ["10", "30", "70"].includes(values.icmsCst);
+  const retainedSt = values.icmsCst === "60";
 
   return (
-    <section className="surface-card overflow-hidden">
-      <div className="border-b border-border p-6 sm:p-8">
+    <section className={embedded ? "" : "surface-card overflow-hidden"}>
+      {!embedded ? <div className="border-b border-border p-6 sm:p-8">
         <p className="eyebrow">{rule ? `Revisão ${rule.revision}` : "Nova regra"}</p>
         <h2 className="mt-3 text-2xl font-semibold">
           {rule ? "Editar regra de ICMS" : "Configurar regra de ICMS"}
@@ -357,9 +456,9 @@ function RuleForm({
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
           Uma alteração fiscal gera nova revisão. Itens já classificados mantêm o snapshot anterior e ficam sinalizados para reconferência.
         </p>
-      </div>
+      </div> : null}
 
-      <form onSubmit={handleSubmit} className="space-y-8 p-6 sm:p-8">
+      <form onSubmit={handleSubmit} className={embedded ? "space-y-8 py-7" : "space-y-8 p-6 sm:p-8"}>
         <fieldset className="grid gap-5 md:grid-cols-2 xl:grid-cols-4" disabled={saving}>
           <legend className="mb-5 w-full border-b border-border pb-3 text-base font-semibold md:col-span-2 xl:col-span-4">
             Aplicação da regra
@@ -459,18 +558,49 @@ function RuleForm({
               {Object.entries(icmsCstLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
-          <label className="grid gap-2 text-sm font-semibold">
-            Alíquota nominal (%)
-            <input className="field-input" inputMode="decimal" value={values.icmsRate} onChange={(event) => setValue("icmsRate", event.target.value)} placeholder={exempt ? "Não se aplica" : "12,00"} disabled={exempt} />
-          </label>
-          <label className="grid gap-2 text-sm font-semibold">
-            Redução da base (%)
-            <input className="field-input" inputMode="decimal" value={values.baseReductionRate} onChange={(event) => setValue("baseReductionRate", event.target.value)} placeholder="0,00" disabled={exempt} />
-          </label>
-          <label className="grid gap-2 text-sm font-semibold">
-            Diferimento (%)
-            <input className="field-input" inputMode="decimal" value={values.defermentRate} onChange={(event) => setValue("defermentRate", event.target.value)} placeholder="0,00" disabled={exempt} />
-          </label>
+          {ownRate ? (
+            <label className="grid gap-2 text-sm font-semibold">
+              Alíquota nominal (%) {["00", "10", "20", "70", "90"].includes(values.icmsCst) ? "*" : ""}
+              <input className="field-input" inputMode="decimal" value={values.icmsRate} onChange={(event) => setValue("icmsRate", event.target.value)} placeholder="12,00" />
+            </label>
+          ) : null}
+          {ownReduction ? (
+            <label className="grid gap-2 text-sm font-semibold">
+              Redução da base (%) {["20", "70"].includes(values.icmsCst) ? "*" : ""}
+              <input className="field-input" inputMode="decimal" value={values.baseReductionRate} onChange={(event) => setValue("baseReductionRate", event.target.value)} placeholder="0,00" />
+            </label>
+          ) : null}
+          {values.icmsCst === "51" ? (
+            <label className="grid gap-2 text-sm font-semibold">
+              Diferimento (%)
+              <input className="field-input" inputMode="decimal" value={values.defermentRate} onChange={(event) => setValue("defermentRate", event.target.value)} placeholder="0,00" />
+            </label>
+          ) : null}
+          {usesSt ? (
+            <div className="grid gap-5 rounded-2xl border border-border bg-muted/25 p-5 md:col-span-2 md:grid-cols-2 xl:col-span-4 xl:grid-cols-4">
+              <div className="md:col-span-2 xl:col-span-4"><h3 className="font-semibold">Substituição tributária</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">Parâmetros aplicados à base e ao cálculo do ICMS-ST deste CST.</p></div>
+              <label className="grid gap-2 text-sm font-semibold">
+                Modalidade da base ST *
+                <select className="field-input" value={values.stBaseMethod} onChange={(event) => setValue("stBaseMethod", event.target.value as "4" | "6")}>
+                  <option value="4">4 — Margem de valor agregado (MVA)</option>
+                  <option value="6">6 — Valor da operação</option>
+                </select>
+              </label>
+              {values.stBaseMethod === "4" ? (
+                <label className="grid gap-2 text-sm font-semibold">MVA (%) *<input className="field-input" inputMode="decimal" value={values.stMvaRate} onChange={(event) => setValue("stMvaRate", event.target.value)} placeholder="40,00" /></label>
+              ) : null}
+              <label className="grid gap-2 text-sm font-semibold">Redução da base ST (%)<input className="field-input" inputMode="decimal" value={values.stBaseReductionRate} onChange={(event) => setValue("stBaseReductionRate", event.target.value)} placeholder="0,00" /></label>
+              <label className="grid gap-2 text-sm font-semibold">Alíquota ICMS-ST (%) *<input className="field-input" inputMode="decimal" value={values.stRate} onChange={(event) => setValue("stRate", event.target.value)} placeholder="18,00" /></label>
+            </div>
+          ) : null}
+          {retainedSt ? (
+            <div className="grid gap-5 rounded-2xl border border-border bg-muted/25 p-5 md:col-span-2 md:grid-cols-3 xl:col-span-4">
+              <div className="md:col-span-3"><h3 className="font-semibold">ICMS-ST retido anteriormente</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">Informe os valores constantes no documento fiscal anterior.</p></div>
+              <label className="grid gap-2 text-sm font-semibold">Base retida (R$) *<input className="field-input" inputMode="decimal" value={values.retainedStBase} onChange={(event) => setValue("retainedStBase", event.target.value)} placeholder="0,00" /></label>
+              <label className="grid gap-2 text-sm font-semibold">Alíquota retida (%) *<input className="field-input" inputMode="decimal" value={values.retainedStRate} onChange={(event) => setValue("retainedStRate", event.target.value)} placeholder="18,00" /></label>
+              <label className="grid gap-2 text-sm font-semibold">Valor retido (R$) *<input className="field-input" inputMode="decimal" value={values.retainedStValue} onChange={(event) => setValue("retainedStValue", event.target.value)} placeholder="0,00" /></label>
+            </div>
+          ) : null}
           <label className="flex min-h-12 items-center gap-3 self-end rounded-xl border border-border px-4 text-sm font-semibold">
             <input type="checkbox" checked={values.taxTreatmentConfirmed} onChange={(event) => setValue("taxTreatmentConfirmed", event.target.checked)} className="size-4 accent-primary" />
             Tratamento fiscal conferido
@@ -481,7 +611,7 @@ function RuleForm({
         </fieldset>
 
         {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
-        <div className="flex flex-wrap justify-end gap-3">
+        <div className={embedded ? "sticky bottom-0 flex flex-wrap justify-end gap-3 border-t border-border bg-background py-5" : "flex flex-wrap justify-end gap-3"}>
           <button type="button" className="button button-ghost" onClick={onCancel} disabled={saving}>Cancelar</button>
           <button type="submit" className="button button-primary" disabled={saving}>
             {saving ? <><LoaderCircle className="animate-spin" size={16} /> Salvando...</> : <><Save size={16} /> {rule ? "Salvar nova revisão" : "Criar regra"}</>}
@@ -526,7 +656,7 @@ function RuleCard({
           <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-5">
             <div><dt className="text-xs text-muted-foreground">Escopo de NCM</dt><dd className="mt-1 font-medium">{scopeDescription(rule)}</dd></div>
             <div><dt className="text-xs text-muted-foreground">CFOP</dt><dd className="mt-1 font-mono font-medium">{configuration.cfop}</dd></div>
-            <div><dt className="text-xs text-muted-foreground">ICMS</dt><dd className="mt-1 font-medium">CST {configuration.icms_cst} · {configuration.icms_rate ? `${configuration.icms_rate}%` : "sem alíquota"}</dd></div>
+            <div><dt className="text-xs text-muted-foreground">ICMS</dt><dd className="mt-1 font-medium">{icmsDescription(configuration)}</dd></div>
             <div><dt className="text-xs text-muted-foreground">Vigência</dt><dd className="mt-1 font-medium">{formatDate(rule.effective_from) ?? "imediata"} — {formatDate(rule.effective_until) ?? "sem término"}</dd></div>
             <div><dt className="text-xs text-muted-foreground">Conferência fiscal</dt><dd className="mt-1 font-medium">{configuration.icms_tax_treatment_confirmed ? "Confirmada" : "Pendente"}</dd></div>
           </dl>
@@ -671,10 +801,7 @@ export function ClientTaxRules({ client }: { client: ClientRecord }) {
 
   return (
     <div className="mt-8 space-y-6">
-      {editing !== undefined ? (
-        <RuleForm key={editing?.id ?? "new"} client={client} profile={profile ?? null} rule={editing} onCancel={() => setEditing(undefined)} onSaved={saved} />
-      ) : (
-        <section className="surface-card overflow-hidden">
+      <section className="surface-card overflow-hidden">
           <div className="flex flex-col gap-5 border-b border-border p-6 sm:flex-row sm:items-start sm:justify-between sm:p-8">
             <div><p className="eyebrow">Automação tributária</p><h2 className="mt-3 text-2xl font-semibold">Regras de ICMS por item da DUIMP</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Defina regras gerais, por capítulo/posição ou por NCM completo. Na classificação, o sistema escolhe primeiro o escopo mais específico e depois a maior prioridade.</p></div>
             <button type="button" className="button button-primary shrink-0" onClick={() => { setEditing(null); setNotice(null); setActionError(null); }}><Plus size={16} /> Nova regra</button>
@@ -703,10 +830,27 @@ export function ClientTaxRules({ client }: { client: ClientRecord }) {
           ) : (
             <div className="p-12 text-center"><Scale className="mx-auto text-sage-strong" size={32} /><p className="mt-4 font-medium">Nenhuma regra de ICMS cadastrada.</p><p className="mt-1 text-sm text-muted-foreground">Comece por uma regra geral e depois crie exceções para capítulos ou NCMs específicos.</p><button type="button" className="button button-primary mt-5" onClick={() => setEditing(null)}><Plus size={16} /> Criar primeira regra</button></div>
           )}
-        </section>
-      )}
+      </section>
 
       <TaxRuleSimulator key={`${profile?.state ?? ""}-${profile?.tax_regime ?? ""}`} clientId={client.id} profile={profile ?? null} />
+      <Sheet
+        open={editing !== undefined}
+        onOpenChange={(open) => { if (!open) setEditing(undefined); }}
+        title={editing ? `Editar regra · revisão ${editing.revision}` : "Nova regra de ICMS"}
+        description="A alteração gera uma nova revisão; itens já classificados preservam o snapshot anterior."
+      >
+        {editing !== undefined ? (
+          <RuleForm
+            key={editing?.id ?? "new"}
+            client={client}
+            profile={profile ?? null}
+            rule={editing}
+            embedded
+            onCancel={() => setEditing(undefined)}
+            onSaved={saved}
+          />
+        ) : null}
+      </Sheet>
     </div>
   );
 }

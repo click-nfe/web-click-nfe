@@ -17,6 +17,13 @@ export type ImportTaxConfiguration = {
   icms_rate?: string;
   icms_base_reduction_rate?: string;
   icms_deferment_rate?: string;
+  icms_st_base_method?: "4" | "6";
+  icms_st_mva_rate?: string;
+  icms_st_base_reduction_rate?: string;
+  icms_st_rate?: string;
+  icms_st_retained_base?: string;
+  icms_st_retained_rate?: string;
+  icms_st_retained_value?: string;
   icms_tax_treatment_confirmed?: boolean;
   [key: string]: unknown;
 };

@@ -15,14 +15,17 @@ import {
   Scale,
   Settings2,
   SlidersHorizontal,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import useSWR from "swr";
 
 import { ClientForm } from "@/components/dashboard/client-form";
 import { ClientCertificates } from "@/components/dashboard/client-certificates";
 import { ClientFiscalProfileSection } from "@/components/dashboard/client-fiscal-profile-form";
 import { ClientTaxRules } from "@/components/dashboard/client-tax-rules";
+import { Sheet } from "@/components/ui/sheet";
 import type { ClientRecord } from "@/lib/api/client-record";
 import type { ImportProcessListResponse } from "@/lib/api/import-process";
 import { routes } from "@/lib/api/routes";
@@ -263,6 +266,80 @@ function ClientOverview({ client }: { client: ClientRecord }) {
   );
 }
 
+function ClientRegistrationSection({
+  client,
+  onUpdated,
+}: {
+  client: ClientRecord;
+  onUpdated: (client: ClientRecord) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const secondaryCnaes = client.cnae_secundario
+    ?.split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="mt-8">
+      <section className="surface-card overflow-hidden">
+        <div className="flex flex-col gap-4 border-b border-border p-6 sm:flex-row sm:items-start sm:justify-between sm:p-8">
+          <div>
+            <p className="eyebrow">Cadastro do importador</p>
+            <h2 className="mt-3 text-2xl font-semibold">Dados cadastrais</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Informações salvas para identificação e operação deste cliente.
+            </p>
+          </div>
+          <button type="button" className="button button-primary shrink-0" onClick={() => setOpen(true)}>
+            <FilePenLine size={16} /> Editar cadastro
+          </button>
+        </div>
+        <div className="space-y-8 p-6 sm:p-8">
+          <dl className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+            <DataItem label="Razão social" value={client.razao_social} />
+            <DataItem label="Nome resumido" value={client.nome_resumido || "Não informado"} />
+            <DataItem label="CNPJ" value={formatCnpj(client.cnpj)} />
+            <DataItem label="Inscrição estadual" value={client.inscricao_estadual || "Não informada"} />
+            <DataItem label="Inscrição municipal" value={client.inscricao_municipal || "Não informada"} />
+            <DataItem label="Regime tributário" value={client.regime_tributacao ? taxRegimeLabels[client.regime_tributacao] ?? client.regime_tributacao : "Não informado"} />
+            <DataItem label="CNAE principal" value={client.cnae_principal || "Não informado"} />
+            <DataItem label="Situação" value={client.ativo ? "Ativo" : "Inativo"} />
+            <DataItem label="Última atualização" value={formatClientDate(client.updated_at)} />
+          </dl>
+          {secondaryCnaes?.length ? (
+            <div className="border-t border-border pt-6">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">CNAEs secundários</p>
+              <ul className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                {secondaryCnaes.map((cnae) => <li key={cnae} className="rounded-xl bg-muted/50 px-4 py-3">{cnae}</li>)}
+              </ul>
+            </div>
+          ) : null}
+          <dl className="grid gap-6 border-t border-border pt-6 md:grid-cols-2">
+            <DataItem label="Endereço do escritório" value={client.endereco_completo_escritorio || "Não informado"} />
+            <DataItem label="Endereço do armazém" value={client.endereco_completo_armazem || "Não informado"} />
+          </dl>
+        </div>
+      </section>
+      <Sheet
+        open={open}
+        onOpenChange={setOpen}
+        title="Editar dados cadastrais"
+        description="Revise as informações do cliente e salve as alterações ao final do formulário."
+      >
+        <ClientForm
+          key={client.updated_at ?? client.id}
+          initialClient={client}
+          onCancel={() => setOpen(false)}
+          onUpdated={(updated) => {
+            onUpdated(updated);
+            setOpen(false);
+          }}
+        />
+      </Sheet>
+    </div>
+  );
+}
+
 function ClientProcessHistory({ clientId }: { clientId: string }) {
   const url = importProcessListUrl({ importerId: clientId, limit: 10, offset: 0 });
   const { data, error, isLoading, mutate } = useSWR<ImportProcessListResponse>(
@@ -272,12 +349,20 @@ function ClientProcessHistory({ clientId }: { clientId: string }) {
 
   return (
     <section className="surface-card mt-8 overflow-hidden">
-      <div className="border-b border-border p-6 sm:p-8">
-        <p className="eyebrow">Histórico operacional</p>
-        <h2 className="mt-3 text-2xl font-semibold">Processos do cliente</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Consulte os processos de importação e DUIMPs vinculados a este cadastro.
-        </p>
+      <div className="flex flex-col gap-5 border-b border-border p-6 sm:flex-row sm:items-start sm:justify-between sm:p-8">
+        <div>
+          <p className="eyebrow">Histórico operacional</p>
+          <h2 className="mt-3 text-2xl font-semibold">Processos do cliente</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Consulte os processos de importação e DUIMPs vinculados a este cadastro.
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <button type="button" className="button button-primary" disabled title="Será ativado com o fluxo de criação de processos">
+            <Plus size={16} /> Novo processo
+          </button>
+          <p className="mt-2 text-xs text-muted-foreground">Em breve · cliente pré-selecionado</p>
+        </div>
       </div>
       {error ? (
         <div className="p-10 text-center">
@@ -430,8 +515,8 @@ export function ClientProfile({
 
       {section === "overview" ? <ClientOverview client={client} /> : null}
       {section === "registration" ? (
-        <ClientForm
-          initialClient={client}
+        <ClientRegistrationSection
+          client={client}
           onUpdated={(updated) => mutate(updated, { revalidate: false })}
         />
       ) : null}
