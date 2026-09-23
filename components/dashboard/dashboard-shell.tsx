@@ -15,6 +15,7 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { Brand } from "@/components/brand";
+import { DashboardSessionProvider } from "@/components/dashboard/dashboard-session-context";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { UserIdentity } from "@/lib/api/auth";
@@ -30,7 +31,7 @@ const navItems: NavItem[] = [
   { label: "Visão geral", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Processos", icon: FileClock, href: "/dashboard/processos" },
   { label: "Clientes", icon: UsersRound, href: "/dashboard/clientes" },
-  { label: "Configurações", icon: Settings2 },
+  { label: "Configurações", icon: Settings2, href: "/dashboard/configuracoes" },
 ];
 
 function DashboardNav({ onNavigate }: { onNavigate?: () => void }) {
@@ -89,9 +90,10 @@ export function DashboardShell({
   const firstName = user.nome.trim().split(/\s+/)[0];
 
   return (
-    <div className="min-h-screen bg-muted/35 lg:grid lg:grid-cols-[17rem_1fr]">
-      <aside className="hidden border-r border-border bg-card lg:sticky lg:top-0 lg:flex lg:h-screen lg:self-start lg:flex-col lg:overflow-y-auto lg:p-5">
-        <Brand />
+    <DashboardSessionProvider value={{ user, organization }}>
+      <div className="min-h-screen bg-muted/35 lg:grid lg:grid-cols-[17rem_1fr]">
+        <aside className="hidden border-r border-border bg-card lg:sticky lg:top-0 lg:flex lg:h-screen lg:self-start lg:flex-col lg:overflow-y-auto lg:p-5">
+          <Brand />
 
         <div className="mt-8 rounded-xl bg-sage-soft p-3">
           <div className="flex items-center gap-3">
@@ -116,9 +118,9 @@ export function DashboardShell({
           </div>
           <LogoutButton />
         </div>
-      </aside>
+        </aside>
 
-      <main className="min-w-0">
+        <main className="min-w-0">
         <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border bg-background/90 px-5 backdrop-blur-xl sm:px-8 lg:px-10">
           <div className="flex items-center gap-3 lg:hidden">
             <button
@@ -159,7 +161,8 @@ export function DashboardShell({
         ) : null}
 
         <div className="p-5 sm:p-8 lg:p-10">{children}</div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </DashboardSessionProvider>
   );
 }

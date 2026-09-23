@@ -20,6 +20,8 @@ export const routes = {
     },
     organization: {
       me: "/organizations/me",
+      portalUnico: "/organizations/me/integrations/portal-unico",
+      portalUnicoTest: "/organizations/me/integrations/portal-unico/test",
     },
     client: {
       list: "/clients",
@@ -65,6 +67,10 @@ export const routes = {
       login: "/api/auth/login",
       refresh: "/api/auth/refresh",
       logout: "/api/auth/logout",
+    },
+    organization: {
+      portalUnico: "/api/organization/integrations/portal-unico",
+      portalUnicoTest: "/api/organization/integrations/portal-unico/test",
     },
     importProcess: {
       list: "/api/import-processes",
