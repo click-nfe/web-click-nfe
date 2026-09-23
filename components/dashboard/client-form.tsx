@@ -98,11 +98,13 @@ function payloadFromValues(values: ClientFormValues): CreateClientPayload {
 export function ClientForm({
   initialClient,
   initialNotice,
+  onCreated,
   onUpdated,
   onCancel,
 }: {
   initialClient?: ClientRecord;
   initialNotice?: string;
+  onCreated?: (client: ClientRecord) => void;
   onUpdated?: (client: ClientRecord) => void;
   onCancel?: () => void;
 }) {
@@ -229,7 +231,11 @@ export function ClientForm({
         setNotice("Alterações salvas com sucesso.");
       } else {
         const created = await createClient(fullPayload);
-        router.push(`/dashboard/clientes/${created.id}?created=1`);
+        if (onCreated) {
+          onCreated(created);
+        } else {
+          router.push(`/dashboard/clientes/${created.id}?created=1`);
+        }
       }
     } catch (requestError) {
       if (axios.isAxiosError<ClientErrorBody>(requestError)) {

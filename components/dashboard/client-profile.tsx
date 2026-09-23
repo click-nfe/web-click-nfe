@@ -358,10 +358,10 @@ function ClientProcessHistory({ clientId }: { clientId: string }) {
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <button type="button" className="button button-primary" disabled title="Será ativado com o fluxo de criação de processos">
+          <Link href={`/dashboard/processos/novo?client_id=${clientId}`} className="button button-primary">
             <Plus size={16} /> Novo processo
-          </button>
-          <p className="mt-2 text-xs text-muted-foreground">Em breve · cliente pré-selecionado</p>
+          </Link>
+          <p className="mt-2 text-xs text-muted-foreground">Cliente pré-selecionado no fluxo</p>
         </div>
       </div>
       {error ? (
@@ -392,7 +392,11 @@ function ClientProcessHistory({ clientId }: { clientId: string }) {
             <tbody className="divide-y divide-border">
               {data.items.map((process) => (
                 <tr key={process.id}>
-                  <td className="px-6 py-5 font-semibold">{process.reference_code}</td>
+                  <td className="px-6 py-5 font-semibold">
+                    <Link href={`/dashboard/processos/${process.id}/emissao`} className="underline-offset-4 hover:underline">
+                      {process.reference_code}
+                    </Link>
+                  </td>
                   <td className="px-6 py-5 font-mono text-xs">{process.duimp_number ?? "Não informada"}</td>
                   <td className="px-6 py-5">
                     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${importProcessStatusClass(process.status)}`}>

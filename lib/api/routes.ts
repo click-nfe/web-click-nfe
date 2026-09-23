@@ -46,6 +46,8 @@ export const routes = {
         `/clients/${resourceId(id)}/import-tax-rules/diagnostics`,
       importTaxRuleSimulation: (id: string) =>
         `/clients/${resourceId(id)}/import-tax-rules/simulate`,
+      nfeNumberSequences: (id: string) =>
+        `/clients/${resourceId(id)}/nfe-number-sequences`,
     },
     fiscalReference: {
       postalCode: (zipCode: string) =>
@@ -59,6 +61,8 @@ export const routes = {
       detail: (id: string) => `/import-processes/${resourceId(id)}`,
       workflowState: (id: string) =>
         `/import-processes/${resourceId(id)}/nfe-workflow-state`,
+      duimpFetch: (id: string) =>
+        `/import-processes/${resourceId(id)}/duimp/fetch`,
     },
   },
   bff: {
@@ -75,6 +79,11 @@ export const routes = {
     importProcess: {
       list: "/api/import-processes",
       dashboardSummary: "/api/import-processes/summary",
+      detail: (id: string) => `/api/import-processes/${resourceId(id)}`,
+      workflowState: (id: string) =>
+        `/api/import-processes/${resourceId(id)}/workflow`,
+      duimpFetch: (id: string) =>
+        `/api/import-processes/${resourceId(id)}/duimp`,
     },
     client: {
       list: "/api/clients",
@@ -97,6 +106,8 @@ export const routes = {
         `/api/clients/${resourceId(id)}/import-tax-rules/diagnostics`,
       importTaxRuleSimulation: (id: string) =>
         `/api/clients/${resourceId(id)}/import-tax-rules/simulate`,
+      nfeNumberSequences: (id: string) =>
+        `/api/clients/${resourceId(id)}/nfe-number-sequences`,
     },
     fiscalReference: {
       postalCode: (zipCode: string) =>

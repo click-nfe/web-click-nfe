@@ -4,9 +4,11 @@ import {
   ChevronLeft,
   ChevronRight,
   FileClock,
+  Plus,
   RefreshCw,
   Search,
 } from "lucide-react";
+import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import useSWR from "swr";
 
@@ -72,9 +74,9 @@ export function ImportProcessList() {
           <h1 className="font-display mt-3 text-4xl font-semibold tracking-[-0.04em]">Processos</h1>
           <p className="mt-2 text-muted-foreground">Consulte os processos de importação disponíveis para a sua organização.</p>
         </div>
-        <button type="button" disabled className="button button-primary min-h-11" title="Disponível no próximo checkpoint">
-          Novo processo
-        </button>
+        <Link href="/dashboard/processos/novo" className="button button-primary min-h-11">
+          <Plus size={16} /> Novo processo
+        </Link>
       </div>
 
       <section className="surface-card mt-8 overflow-hidden">
@@ -152,7 +154,7 @@ export function ImportProcessList() {
                 {data.items.map((process) => (
                   <tr key={process.id} className="transition hover:bg-muted/30">
                     <td className="px-6 py-5">
-                      <p className="font-semibold">{process.reference_code}</p>
+                      <Link href={`/dashboard/processos/${process.id}/emissao`} className="font-semibold underline-offset-4 hover:underline">{process.reference_code}</Link>
                       <p className="mt-1 text-xs text-muted-foreground">{process.source.replaceAll("_", " ")}</p>
                     </td>
                     <td className="max-w-64 px-6 py-5">
@@ -179,6 +181,9 @@ export function ImportProcessList() {
             <FileClock className="mx-auto text-sage-strong" size={30} />
             <p className="mt-4 font-medium">Nenhum processo encontrado.</p>
             <p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou aguarde o primeiro processo da organização.</p>
+            <Link href="/dashboard/processos/novo" className="button button-primary mt-5">
+              <Plus size={16} /> Iniciar primeira emissão
+            </Link>
           </div>
         )}
 

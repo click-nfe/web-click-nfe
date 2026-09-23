@@ -4,11 +4,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { ACCESS_COOKIE } from "@/lib/auth-cookies";
 import { apiUnavailableMessage, hasApiStatus, logApiError } from "@/lib/api/errors";
 import {
+  createImportProcess,
   importProcessStatuses,
   listImportProcesses,
+  type CreateImportProcessPayload,
   type ImportProcessListParams,
   type ImportProcessStatus,
 } from "@/lib/api/import-process";
+import { importProcessApiErrorResponse } from "@/lib/api/import-process-route-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -67,5 +70,42 @@ export async function GET(request: NextRequest) {
       { error: apiUnavailableMessage(error) },
       { status: 502 },
     );
+  }
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function parseCreatePayload(value: unknown): CreateImportProcessPayload | null {
+  if (!isObject(value)) return null;
+  if (
+    typeof value.importer_id !== "string" ||
+    !value.importer_id.trim() ||
+    value.source !== "portal_unico"
+  ) {
+    return null;
+  }
+  return { importer_id: value.importer_id, source: "portal_unico" };
+}
+
+export async function POST(request: NextRequest) {
+  const token = (await cookies()).get(ACCESS_COOKIE)?.value;
+  if (!token) {
+    return NextResponse.json({ error: "Sessão não encontrada." }, { status: 401 });
+  }
+  const payload = parseCreatePayload(await request.json().catch(() => null));
+  if (!payload) {
+    return NextResponse.json(
+      { error: "invalid_payload", message: "Selecione um cliente válido." },
+      { status: 400 },
+    );
+  }
+  try {
+    return NextResponse.json(await createImportProcess(token, payload), {
+      status: 201,
+    });
+  } catch (error) {
+    return importProcessApiErrorResponse("import-process.create", error);
   }
 }
