@@ -63,6 +63,12 @@ export const routes = {
         `/import-processes/${resourceId(id)}/nfe-workflow-state`,
       duimpFetch: (id: string) =>
         `/import-processes/${resourceId(id)}/duimp/fetch`,
+      nfeContext: (id: string) =>
+        `/import-processes/${resourceId(id)}/nfe-context`,
+      nfeContextResolve: (id: string) =>
+        `/import-processes/${resourceId(id)}/nfe-context/resolve`,
+      itemClassifications: (id: string) =>
+        `/import-processes/${resourceId(id)}/item-classifications`,
     },
   },
   bff: {
@@ -84,6 +90,10 @@ export const routes = {
         `/api/import-processes/${resourceId(id)}/workflow`,
       duimpFetch: (id: string) =>
         `/api/import-processes/${resourceId(id)}/duimp`,
+      nfeContext: (id: string) =>
+        `/api/import-processes/${resourceId(id)}/context`,
+      itemClassifications: (id: string) =>
+        `/api/import-processes/${resourceId(id)}/classifications`,
     },
     client: {
       list: "/api/clients",

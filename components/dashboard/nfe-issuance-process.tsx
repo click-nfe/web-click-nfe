@@ -16,6 +16,7 @@ import {
   ClientIssuanceReadinessPanel,
   useClientIssuanceReadiness,
 } from "@/components/dashboard/client-issuance-readiness";
+import { NfeContextReview } from "@/components/dashboard/nfe-context-review";
 import { NfeIssuanceStepper } from "@/components/dashboard/nfe-issuance-stepper";
 import { NfeNumberSequenceSheet } from "@/components/dashboard/nfe-number-sequence-sheet";
 import type { ClientRecord } from "@/lib/api/client-record";
@@ -149,10 +150,6 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
                 </div>
               </div>
             </div>
-            <button type="button" className="button button-primary mt-6" disabled title="Será habilitado no próximo checkpoint">
-              Continuar para o contexto fiscal
-            </button>
-            <p className="mt-2 text-xs text-muted-foreground">A revisão do contexto e das finalidades será implementada no próximo checkpoint.</p>
           </div>
         ) : (
           <form onSubmit={submitDuimp} className="p-6 sm:p-8">
@@ -184,6 +181,15 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
           </form>
         )}
       </section>
+
+      {workflow.latest_snapshot && clientId ? (
+        <NfeContextReview
+          processId={processId}
+          clientId={clientId}
+          snapshotId={workflow.latest_snapshot.id}
+          onWorkflowChange={() => workflowRequest.mutate()}
+        />
+      ) : null}
 
       {clientId ? (
         <NfeNumberSequenceSheet
