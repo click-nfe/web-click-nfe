@@ -1,7 +1,12 @@
 import type {
+  CreateImportProcessPayload,
+  DuimpFetchResult,
   ImportProcessDashboardSummary,
   ImportProcessListParams,
   ImportProcessListResponse,
+  ImportProcessRecord,
+  NfeWorkflowState,
+  UpdateImportProcessPayload,
 } from "@/lib/api/import-process";
 import { routes } from "@/lib/api/routes";
 import { bffClient } from "@/lib/bff/client";
@@ -31,6 +36,39 @@ export async function listImportProcesses(params?: ImportProcessListParams) {
 export async function getImportProcessDashboardSummary() {
   const response = await bffClient.get<ImportProcessDashboardSummary>(
     routes.bff.importProcess.dashboardSummary,
+  );
+  return response.data;
+}
+
+export async function createImportProcess(payload: CreateImportProcessPayload) {
+  const response = await bffClient.post<ImportProcessRecord>(
+    routes.bff.importProcess.list,
+    payload,
+  );
+  return response.data;
+}
+
+export async function updateImportProcess(
+  id: string,
+  payload: UpdateImportProcessPayload,
+) {
+  const response = await bffClient.put<ImportProcessRecord>(
+    routes.bff.importProcess.detail(id),
+    payload,
+  );
+  return response.data;
+}
+
+export async function fetchProcessDuimp(id: string) {
+  const response = await bffClient.post<DuimpFetchResult>(
+    routes.bff.importProcess.duimpFetch(id),
+  );
+  return response.data;
+}
+
+export async function getNfeWorkflowState(id: string) {
+  const response = await bffClient.get<NfeWorkflowState>(
+    routes.bff.importProcess.workflowState(id),
   );
   return response.data;
 }

@@ -1,0 +1,23 @@
+import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
+
+import { getNfeWorkflowState } from "@/lib/api/import-process";
+import { importProcessApiErrorResponse } from "@/lib/api/import-process-route-helpers";
+import { ACCESS_COOKIE } from "@/lib/auth-cookies";
+
+export const dynamic = "force-dynamic";
+
+type Context = { params: Promise<{ id: string }> };
+
+export async function GET(_request: NextRequest, context: Context) {
+  const token = (await cookies()).get(ACCESS_COOKIE)?.value;
+  if (!token) {
+    return NextResponse.json({ error: "Sessão não encontrada." }, { status: 401 });
+  }
+  const { id } = await context.params;
+  try {
+    return NextResponse.json(await getNfeWorkflowState(token, id));
+  } catch (error) {
+    return importProcessApiErrorResponse("import-process.workflow", error);
+  }
+}
