@@ -1,5 +1,6 @@
 import type { AxiosRequestConfig } from "axios";
 
+import type { ImportPurpose } from "@/lib/api/client-import-tax-rule";
 import { routes } from "@/lib/api/routes";
 import { apiClient, bearerConfig } from "@/lib/api/server-client";
 
@@ -179,6 +180,130 @@ export type DuimpFetchResult = {
   normalized: Record<string, unknown>;
 };
 
+export type NfeContextField = {
+  value: string | null;
+  source: string | null;
+  status: "resolved" | "missing";
+};
+
+export type NfeContextState = {
+  process_id: string;
+  snapshot_id: string;
+  normalized: {
+    number?: string | null;
+    registration_date?: string | null;
+    import_modality?: string | null;
+    clearance_location?: string | null;
+    clearance_state?: string | null;
+    clearance_date?: string | null;
+    transport_mode_code?: string | null;
+    foreign_supplier?: {
+      name?: string | null;
+      country_code?: string | null;
+      country_name?: string | null;
+      country_iso_alpha_2?: string | null;
+    };
+    items?: Array<Record<string, unknown>>;
+    [key: string]: unknown;
+  };
+  fields: Record<string, NfeContextField>;
+  missing_fields: string[];
+  ready_for_draft: boolean;
+  external: { errors?: Array<{ source?: string; code?: string; message?: string }> };
+  suggested: {
+    duimp_overrides?: Record<string, unknown>;
+    foreign_supplier?: Record<string, unknown> | null;
+    additional_costs?: Record<string, string>;
+  };
+  fiscal_references?: Record<string, unknown>;
+  tax_rule?: Record<string, unknown> | null;
+  tax_rules?: Array<Record<string, unknown>>;
+};
+
+export type ResolveNfeContextPayload = {
+  duimp_snapshot_id: string;
+  refresh_external: boolean;
+  overrides: {
+    clearance_location?: string;
+    clearance_state?: string;
+    clearance_date?: string;
+    transport_mode_code?: string;
+    foreign_supplier?: {
+      name?: string;
+      country_code?: string;
+      country_name?: string;
+    };
+  };
+};
+
+export type NfeItemClassificationStatus =
+  | "unclassified"
+  | "missing_tax_rule"
+  | "inactive_tax_rule"
+  | "stale_tax_rule"
+  | "missing_cfop"
+  | "classified";
+
+export type NfeItemRuleCandidate = {
+  id: string;
+  name: string;
+  mismatch_reasons: string[];
+  issuer_state: string;
+  tax_regime: string | null;
+  import_modality: string | null;
+  ncm_pattern: string | null;
+  ncm_scope_type: string;
+  ncm_patterns: string[];
+  effective_from: string | null;
+  effective_until: string | null;
+  cfop: string;
+};
+
+export type NfeItemClassification = {
+  duimp_item_number: string;
+  product_code: string | null;
+  description: string | null;
+  ncm: string | null;
+  exporter_code: string | null;
+  import_purpose: ImportPurpose | null;
+  cfop: string | null;
+  cfop_source: string | null;
+  tax_rule: {
+    id: string;
+    name: string;
+    active: boolean;
+    revision: number;
+    applied_revision: number | null;
+  } | null;
+  status: NfeItemClassificationStatus;
+  rule_candidates: NfeItemRuleCandidate[];
+  classified_by: { id: string; name: string } | null;
+  updated_at: string | null;
+};
+
+export type NfeItemClassificationState = {
+  process_id: string;
+  snapshot_id: string;
+  items: NfeItemClassification[];
+  total_items: number;
+  classified_count: number;
+  pending_count: number;
+  purpose_counts: Partial<Record<ImportPurpose, number>>;
+  registration_date: string | null;
+  has_classifications: boolean;
+  ready_for_draft: boolean;
+  latest_updated_at: string | null;
+};
+
+export type SaveNfeItemClassificationsPayload = {
+  duimp_snapshot_id: string;
+  items: Array<{
+    duimp_item_number: string;
+    import_purpose: ImportPurpose;
+    tax_rule_id?: string;
+  }>;
+};
+
 function toBackendParams(params: ImportProcessListParams = {}) {
   return {
     status: params.status,
@@ -264,6 +389,62 @@ export async function fetchProcessDuimp(accessToken: string, id: string) {
       source_provider: "portal_unico",
       enrich_catalog: true,
     },
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function getNfeContext(
+  accessToken: string,
+  id: string,
+  snapshotId?: string,
+) {
+  const response = await apiClient.get<NfeContextState>(
+    routes.backend.importProcess.nfeContext(id),
+    {
+      ...bearerConfig(accessToken),
+      params: snapshotId ? { duimp_snapshot_id: snapshotId } : undefined,
+    },
+  );
+  return response.data;
+}
+
+export async function resolveNfeContext(
+  accessToken: string,
+  id: string,
+  payload: ResolveNfeContextPayload,
+) {
+  const response = await apiClient.post<NfeContextState>(
+    routes.backend.importProcess.nfeContextResolve(id),
+    payload,
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function getNfeItemClassifications(
+  accessToken: string,
+  id: string,
+  snapshotId?: string,
+) {
+  const response = await apiClient.get<NfeItemClassificationState>(
+    routes.backend.importProcess.itemClassifications(id),
+    {
+      ...bearerConfig(accessToken),
+      params: snapshotId ? { duimp_snapshot_id: snapshotId } : undefined,
+    },
+  );
+  return response.data;
+}
+
+export async function saveNfeItemClassifications(
+  accessToken: string,
+  id: string,
+  payload: SaveNfeItemClassificationsPayload,
+) {
+  const response = await apiClient.put<NfeItemClassificationState>(
+    routes.backend.importProcess.itemClassifications(id),
+    payload,
     bearerConfig(accessToken),
   );
   return response.data;
