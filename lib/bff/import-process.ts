@@ -1,6 +1,7 @@
 import type {
   CreateImportProcessPayload,
   CreateNfeDocumentPlanPayload,
+  DuimpSnapshotDetails,
   DuimpFetchResult,
   ImportProcessDashboardSummary,
   ImportProcessListParams,
@@ -8,6 +9,9 @@ import type {
   ImportProcessRecord,
   NfeContextState,
   NfeDocumentPlan,
+  GenerateNfeChildDraftsResult,
+  NfeDraftDetail,
+  NfeDraftValidation,
   NfeItemClassificationState,
   NfeWorkflowState,
   ResolveNfeContextPayload,
@@ -72,6 +76,10 @@ export async function fetchProcessDuimp(id: string) {
   return response.data;
 }
 
+export function duimpSnapshotUrl(id: string, snapshotId: string) {
+  return routes.bff.importProcess.duimpSnapshot(id, snapshotId);
+}
+
 export async function getNfeWorkflowState(id: string) {
   const response = await bffClient.get<NfeWorkflowState>(
     routes.bff.importProcess.workflowState(id),
@@ -132,3 +140,24 @@ export async function createNfeDocumentPlan(
   );
   return response.data;
 }
+
+export async function generateNfeChildDrafts(id: string, snapshotId: string) {
+  const response = await bffClient.post<GenerateNfeChildDraftsResult>(
+    routes.bff.importProcess.drafts(id),
+    { duimp_snapshot_id: snapshotId },
+  );
+  return response.data;
+}
+
+export function nfeDraftUrl(draftId: string) {
+  return routes.bff.importProcess.draft(draftId);
+}
+
+export async function validateNfeDraft(draftId: string) {
+  const response = await bffClient.post<NfeDraftValidation>(
+    routes.bff.importProcess.draftValidate(draftId),
+  );
+  return response.data;
+}
+
+export type { DuimpSnapshotDetails, NfeDraftDetail };

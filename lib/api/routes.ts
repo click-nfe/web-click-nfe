@@ -65,6 +65,8 @@ export const routes = {
         `/import-processes/${resourceId(id)}/nfe-workflow-state`,
       duimpFetch: (id: string) =>
         `/import-processes/${resourceId(id)}/duimp/fetch`,
+      duimpSnapshots: (id: string) =>
+        `/import-processes/${resourceId(id)}/duimp-snapshots`,
       nfeContext: (id: string) =>
         `/import-processes/${resourceId(id)}/nfe-context`,
       nfeContextResolve: (id: string) =>
@@ -73,6 +75,13 @@ export const routes = {
         `/import-processes/${resourceId(id)}/item-classifications`,
       documentPlan: (id: string) =>
         `/import-processes/${resourceId(id)}/nfe-document-plan`,
+      documentPlanDrafts: (id: string) =>
+        `/import-processes/${resourceId(id)}/nfe-document-plan/generate-drafts`,
+      drafts: (id: string) =>
+        `/import-processes/${resourceId(id)}/nfe-drafts`,
+      draft: (id: string) => `/nfe-drafts/${resourceId(id)}`,
+      draftValidate: (id: string) =>
+        `/nfe-drafts/${resourceId(id)}/validate`,
     },
   },
   bff: {
@@ -94,12 +103,19 @@ export const routes = {
         `/api/import-processes/${resourceId(id)}/workflow`,
       duimpFetch: (id: string) =>
         `/api/import-processes/${resourceId(id)}/duimp`,
+      duimpSnapshot: (id: string, snapshotId: string) =>
+        `/api/import-processes/${resourceId(id)}/duimp/${resourceId(snapshotId)}`,
       nfeContext: (id: string) =>
         `/api/import-processes/${resourceId(id)}/context`,
       itemClassifications: (id: string) =>
         `/api/import-processes/${resourceId(id)}/classifications`,
       documentPlan: (id: string) =>
         `/api/import-processes/${resourceId(id)}/document-plan`,
+      drafts: (id: string) =>
+        `/api/import-processes/${resourceId(id)}/drafts`,
+      draft: (id: string) => `/api/nfe-drafts/${resourceId(id)}`,
+      draftValidate: (id: string) =>
+        `/api/nfe-drafts/${resourceId(id)}/validate`,
     },
     client: {
       list: "/api/clients",

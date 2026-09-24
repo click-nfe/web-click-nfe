@@ -180,6 +180,17 @@ export type DuimpFetchResult = {
   normalized: Record<string, unknown>;
 };
 
+export type DuimpSnapshotDetails = {
+  id: string;
+  import_process_id: string;
+  duimp_number: string;
+  duimp_version: string | null;
+  source_provider: string;
+  fetched_at: string | null;
+  created_at: string;
+  normalized: Record<string, unknown>;
+};
+
 export type NfeContextField = {
   value: string | null;
   source: string | null;
@@ -351,8 +362,88 @@ export type NfePlannedDocument = {
     shared_costs?: string;
     planned_value?: string;
   };
-  draft: Record<string, unknown> | null;
+  draft: NfeDraftSummary | null;
   items: NfePlannedDocumentItem[];
+};
+
+export type NfeValidationIssue = {
+  field?: string;
+  code?: string;
+  message?: string;
+  severity?: string;
+  blocking?: boolean;
+  [key: string]: unknown;
+};
+
+export type NfeDraftSummary = {
+  id: string;
+  status: string;
+  number: number | null;
+  series: string;
+  access_key: string | null;
+  validation_errors: NfeValidationIssue[];
+  validation_warnings: NfeValidationIssue[];
+  latest_xml: Record<string, unknown> | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type NfeDraftRecord = NfeDraftSummary & {
+  organization_id: string;
+  import_process_id: string;
+  importer_id: string;
+  duimp_snapshot_id: string | null;
+  planned_document_id: string | null;
+  model: string;
+  purpose: string;
+  operation_type: string;
+  environment: "production";
+  fiscal_payload: Record<string, unknown>;
+};
+
+export type NfeDraftItem = {
+  id: string;
+  nfe_draft_id: string;
+  item_number: number;
+  duimp_item_number: string | null;
+  product_code: string | null;
+  description: string;
+  ncm: string;
+  cfop: string;
+  commercial_unit: string;
+  commercial_quantity: string;
+  commercial_unit_value: string;
+  taxable_unit: string;
+  taxable_quantity: string;
+  taxable_unit_value: string;
+  product_value: string;
+  freight_value: string;
+  insurance_value: string;
+  discount_value: string;
+  other_value: string;
+  import_payload: Record<string, unknown> | null;
+  tax_payload: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NfeDraftDetail = {
+  draft: NfeDraftRecord;
+  items: NfeDraftItem[];
+  xmlVersions: Array<Record<string, unknown>>;
+  auditTrail: Array<Record<string, unknown>>;
+};
+
+export type GenerateNfeChildDraftsResult = {
+  created_draft_ids: string[];
+  reused_draft_ids: string[];
+  plan: NfeDocumentPlan;
+};
+
+export type NfeDraftValidation = {
+  valid: boolean;
+  errors: NfeValidationIssue[];
+  warnings: NfeValidationIssue[];
 };
 
 export type NfeDocumentPlan = {
@@ -504,6 +595,16 @@ export async function fetchProcessDuimp(accessToken: string, id: string) {
   return response.data;
 }
 
+export async function listDuimpSnapshots(accessToken: string, id: string) {
+  const response = await apiClient.get<Array<Omit<DuimpSnapshotDetails, "normalized"> & {
+    normalized_payload?: Record<string, unknown> | null;
+  }>>(
+    routes.backend.importProcess.duimpSnapshots(id),
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
 export async function getNfeContext(
   accessToken: string,
   id: string,
@@ -583,6 +684,46 @@ export async function createNfeDocumentPlan(
   const response = await apiClient.post<NfeDocumentPlan>(
     routes.backend.importProcess.documentPlan(id),
     payload,
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function generateNfeChildDrafts(
+  accessToken: string,
+  id: string,
+  snapshotId: string,
+) {
+  const response = await apiClient.post<GenerateNfeChildDraftsResult>(
+    routes.backend.importProcess.documentPlanDrafts(id),
+    {
+      duimp_snapshot_id: snapshotId,
+      environment: "production",
+      series: "1",
+    },
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function getNfeDraft(
+  accessToken: string,
+  draftId: string,
+) {
+  const response = await apiClient.get<NfeDraftDetail>(
+    routes.backend.importProcess.draft(draftId),
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function validateNfeDraft(
+  accessToken: string,
+  draftId: string,
+) {
+  const response = await apiClient.post<NfeDraftValidation>(
+    routes.backend.importProcess.draftValidate(draftId),
+    {},
     bearerConfig(accessToken),
   );
   return response.data;

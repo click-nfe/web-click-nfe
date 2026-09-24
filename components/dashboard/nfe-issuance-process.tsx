@@ -17,6 +17,7 @@ import {
   useClientIssuanceReadiness,
 } from "@/components/dashboard/client-issuance-readiness";
 import { NfeContextReview } from "@/components/dashboard/nfe-context-review";
+import { DuimpCaptureDetails } from "@/components/dashboard/duimp-capture-details";
 import { NfeDocumentPlanPanel } from "@/components/dashboard/nfe-document-plan";
 import { NfeIssuanceStepper } from "@/components/dashboard/nfe-issuance-stepper";
 import { NfeNumberSequenceSheet } from "@/components/dashboard/nfe-number-sequence-sheet";
@@ -150,6 +151,7 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
                   </p>
                 </div>
               </div>
+              <DuimpCaptureDetails processId={processId} snapshotId={workflow.latest_snapshot.id} />
             </div>
           </div>
         ) : (
@@ -196,6 +198,7 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
         <NfeDocumentPlanPanel
           processId={processId}
           snapshotId={workflow.latest_snapshot.id}
+          requiresRebuild={workflow.next_action === "create_document_plan" && workflow.prerequisites.has_document_plan}
           onWorkflowChange={() => workflowRequest.mutate()}
         />
       ) : null}
