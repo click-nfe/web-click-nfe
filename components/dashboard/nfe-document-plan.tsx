@@ -8,12 +8,12 @@ import {
   PencilLine,
   RefreshCw,
   Save,
-  Scale,
 } from "lucide-react";
 import { FormEvent, useState } from "react";
 import useSWR from "swr";
 
 import { Sheet } from "@/components/ui/sheet";
+import { NfeDraftReviewPanel } from "@/components/dashboard/nfe-draft-review";
 import type { ImportPurpose } from "@/lib/api/client-import-tax-rule";
 import type {
   NfeDocumentPlan,
@@ -65,22 +65,15 @@ function supplierName(document: NfePlannedDocument) {
     || "Exportador não identificado";
 }
 
-function costsFromPlan(plan: NfeDocumentPlan | null): CostValues {
-  return {
-    afrmm: plan?.shared_costs.afrmm ?? "",
-    siscomex_fee: plan?.shared_costs.siscomex_fee ?? "",
-    thc: plan?.shared_costs.thc ?? "",
-    other: plan?.shared_costs.other ?? "",
-  };
-}
-
 export function NfeDocumentPlanPanel({
   processId,
   snapshotId,
+  requiresRebuild = false,
   onWorkflowChange,
 }: {
   processId: string;
   snapshotId: string;
+  requiresRebuild?: boolean;
   onWorkflowChange: () => Promise<unknown>;
 }) {
   const url = nfeDocumentPlanUrl(processId, snapshotId);
@@ -91,7 +84,9 @@ export function NfeDocumentPlanPanel({
   const [actionError, setActionError] = useState<string | null>(null);
 
   function openEditor() {
-    setCosts(costsFromPlan(data?.plan ?? null));
+    // A API devolve os custos já resolvidos, sem distinguir automáticos de
+    // substituições manuais. Manter os campos vazios preserva os automáticos.
+    setCosts(emptyCosts);
     setActionError(null);
     setSheetOpen(true);
   }
@@ -135,7 +130,7 @@ export function NfeDocumentPlanPanel({
     }
   }
 
-  const plan = data?.plan ?? null;
+  const plan = requiresRebuild ? null : data?.plan ?? null;
 
   return (
     <>
@@ -172,14 +167,14 @@ export function NfeDocumentPlanPanel({
               <div className="flex items-start gap-3">
                 <FileStack className="mt-0.5 shrink-0" size={21} />
                 <div>
-                  <p className="font-semibold">Itens classificados e prontos para planejamento</p>
+                  <p className="font-semibold">{requiresRebuild ? "As classificações mudaram; recalcule o plano" : "Itens classificados e prontos para planejamento"}</p>
                   <p className="mt-1 text-sm">
-                    Será criada uma Master apenas gerencial e uma NF-e filha para cada exportador encontrado na DUIMP.
+                    {requiresRebuild ? "O plano anterior não será reutilizado porque pode conter finalidades, CFOPs ou rateios desatualizados." : "Será criada uma Master apenas gerencial e uma NF-e filha para cada exportador encontrado na DUIMP."}
                   </p>
                 </div>
               </div>
               <button type="button" className="button button-primary mt-5" onClick={openEditor}>
-                <FileStack size={16} /> Montar plano de notas
+                <FileStack size={16} /> {requiresRebuild ? "Recalcular plano" : "Montar plano de notas"}
               </button>
             </div>
           </div>
@@ -191,6 +186,22 @@ export function NfeDocumentPlanPanel({
           <p className="mx-6 mb-6 text-sm text-destructive" role="alert">{actionError}</p>
         ) : null}
       </section>
+
+      {plan ? (
+        <NfeDraftReviewPanel
+          processId={processId}
+          snapshotId={snapshotId}
+          plan={plan}
+          onPlanChange={async (nextPlan) => {
+            await mutate(
+              { process_id: processId, snapshot_id: snapshotId, plan: nextPlan },
+              { revalidate: false },
+            );
+          }}
+          onPlanRefresh={() => mutate()}
+          onWorkflowChange={onWorkflowChange}
+        />
+      ) : null}
 
       <Sheet
         open={sheetOpen}
@@ -267,15 +278,7 @@ function PlanSummary({ plan }: { plan: NfeDocumentPlan }) {
         {plan.documents.map((document) => <DocumentCard key={document.id} document={document} />)}
       </div>
 
-      <div className="mt-7 flex items-start gap-3 rounded-2xl border border-border bg-muted/35 p-4 text-sm">
-        <Scale className="mt-0.5 shrink-0 text-primary" size={19} />
-        <div>
-          <p className="font-semibold">Plano pronto para gerar os rascunhos</p>
-          <p className="mt-1 text-muted-foreground">
-            A criação e a revisão individual das NF-e filhas serão habilitadas no próximo checkpoint. Nenhum XML foi gerado nesta etapa.
-          </p>
-        </div>
-      </div>
+      <a href="#rascunhos-nfe" className="button button-primary mt-7">Ir para os rascunhos</a>
     </div>
   );
 }
