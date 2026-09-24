@@ -1,11 +1,13 @@
 import type {
   CreateImportProcessPayload,
+  CreateNfeDocumentPlanPayload,
   DuimpFetchResult,
   ImportProcessDashboardSummary,
   ImportProcessListParams,
   ImportProcessListResponse,
   ImportProcessRecord,
   NfeContextState,
+  NfeDocumentPlan,
   NfeItemClassificationState,
   NfeWorkflowState,
   ResolveNfeContextPayload,
@@ -108,6 +110,24 @@ export async function saveNfeItemClassifications(
 ) {
   const response = await bffClient.put<NfeItemClassificationState>(
     routes.bff.importProcess.itemClassifications(id),
+    payload,
+  );
+  return response.data;
+}
+
+export function nfeDocumentPlanUrl(id: string, snapshotId?: string) {
+  const search = new URLSearchParams();
+  if (snapshotId) search.set("duimp_snapshot_id", snapshotId);
+  const query = search.toString();
+  return `${routes.bff.importProcess.documentPlan(id)}${query ? `?${query}` : ""}`;
+}
+
+export async function createNfeDocumentPlan(
+  id: string,
+  payload: CreateNfeDocumentPlanPayload,
+) {
+  const response = await bffClient.post<NfeDocumentPlan>(
+    routes.bff.importProcess.documentPlan(id),
     payload,
   );
   return response.data;

@@ -427,7 +427,7 @@ function NfeItemClassificationSection({
               </table>
             </div>
             {data.ready_for_draft ? (
-              <div className="m-5 rounded-2xl border border-primary/20 bg-sage-soft p-5 text-sage-strong sm:m-6"><div className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 shrink-0" size={20} /><div><p className="font-semibold">Todos os itens possuem regra aplicável</p><p className="mt-1 text-sm">O processo está pronto para criar e reconciliar o plano de documentos.</p></div></div><button type="button" className="button button-primary mt-5" disabled title="Será habilitado no próximo checkpoint">Criar plano de documentos</button><p className="mt-2 text-xs">A divisão por exportador e o rateio de despesas serão implementados no próximo checkpoint.</p></div>
+              <div className="m-5 rounded-2xl border border-primary/20 bg-sage-soft p-5 text-sage-strong sm:m-6"><div className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 shrink-0" size={20} /><div><p className="font-semibold">Todos os itens possuem regra aplicável</p><p className="mt-1 text-sm">O processo está pronto para criar e reconciliar o plano de documentos.</p></div></div><a href="#plano-de-notas" className="button button-primary mt-5">Revisar plano de documentos</a></div>
             ) : (
               <div className="m-5 rounded-2xl border border-amber-400/35 bg-amber-500/5 p-4 text-sm text-amber-800 dark:text-amber-300 sm:m-6">
                 <div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 shrink-0" size={18} /><div><p className="font-semibold">Classificação incompleta</p><p className="mt-1">Defina a finalidade dos itens e corrija regras ausentes, inativas ou desatualizadas.</p></div></div>

@@ -17,6 +17,7 @@ import {
   useClientIssuanceReadiness,
 } from "@/components/dashboard/client-issuance-readiness";
 import { NfeContextReview } from "@/components/dashboard/nfe-context-review";
+import { NfeDocumentPlanPanel } from "@/components/dashboard/nfe-document-plan";
 import { NfeIssuanceStepper } from "@/components/dashboard/nfe-issuance-stepper";
 import { NfeNumberSequenceSheet } from "@/components/dashboard/nfe-number-sequence-sheet";
 import type { ClientRecord } from "@/lib/api/client-record";
@@ -186,6 +187,14 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
         <NfeContextReview
           processId={processId}
           clientId={clientId}
+          snapshotId={workflow.latest_snapshot.id}
+          onWorkflowChange={() => workflowRequest.mutate()}
+        />
+      ) : null}
+
+      {workflow.latest_snapshot && workflow.prerequisites.item_classification_ready ? (
+        <NfeDocumentPlanPanel
+          processId={processId}
           snapshotId={workflow.latest_snapshot.id}
           onWorkflowChange={() => workflowRequest.mutate()}
         />

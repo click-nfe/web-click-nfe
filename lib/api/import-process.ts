@@ -311,6 +311,109 @@ export type SaveNfeItemClassificationsPayload = {
   }>;
 };
 
+export type NfeSharedCosts = {
+  afrmm?: string;
+  siscomex_fee?: string;
+  thc?: string;
+  other?: string;
+};
+
+export type NfePlannedDocumentItem = {
+  id: string;
+  duimp_item_number: string;
+  exporter_code: string | null;
+  import_purpose: ImportPurpose;
+  cfop: string;
+  customs_value: string;
+  allocated_shared_costs: NfeSharedCosts;
+};
+
+export type NfePlannedDocument = {
+  id: string;
+  ordinal: number;
+  status: string;
+  exporter_key: string;
+  exporter_code: string | null;
+  foreign_supplier: {
+    name?: string | null;
+    legal_name?: string | null;
+    foreign_tax_id?: string | null;
+    country_name?: string | null;
+  } | null;
+  operation_nature: string;
+  item_purposes: ImportPurpose[];
+  mixed_import_purposes: boolean;
+  items_count: number;
+  customs_value: string;
+  allocated_shared_costs: NfeSharedCosts;
+  totals: {
+    customs_value?: string;
+    shared_costs?: string;
+    planned_value?: string;
+  };
+  draft: Record<string, unknown> | null;
+  items: NfePlannedDocumentItem[];
+};
+
+export type NfeDocumentPlan = {
+  id: string;
+  process_id: string;
+  snapshot_id: string;
+  version_number: number;
+  status: string;
+  allocation_basis: "customs_value";
+  shared_costs: NfeSharedCosts;
+  totals: {
+    documents_count?: number;
+    items_count?: number;
+    customs_value?: string;
+    shared_costs?: string;
+    planned_value?: string;
+  };
+  reconciliation: {
+    balanced?: boolean;
+    unassigned_items?: number;
+    checks?: Array<{
+      name: string;
+      expected: string;
+      allocated: string;
+      difference: string;
+      balanced: boolean;
+    }>;
+  };
+  master: {
+    type: "managerial";
+    is_fiscal_document: false;
+    has_number: false;
+    has_access_key: false;
+    has_xml: false;
+  };
+  progress: {
+    documents_count: number;
+    drafts_count: number;
+    xmls_count: number;
+    xsd_valid_count: number;
+    all_drafts_created: boolean;
+    all_xmls_generated: boolean;
+    all_xmls_valid: boolean;
+  };
+  documents: NfePlannedDocument[];
+  created_by: { id: string; name: string } | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type NfeDocumentPlanState = {
+  process_id: string;
+  snapshot_id: string;
+  plan: NfeDocumentPlan | null;
+};
+
+export type CreateNfeDocumentPlanPayload = {
+  duimp_snapshot_id: string;
+  additional_costs: NfeSharedCosts;
+};
+
 function toBackendParams(params: ImportProcessListParams = {}) {
   return {
     status: params.status,
@@ -451,6 +554,34 @@ export async function saveNfeItemClassifications(
 ) {
   const response = await apiClient.put<NfeItemClassificationState>(
     routes.backend.importProcess.itemClassifications(id),
+    payload,
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function getNfeDocumentPlan(
+  accessToken: string,
+  id: string,
+  snapshotId?: string,
+) {
+  const response = await apiClient.get<NfeDocumentPlanState>(
+    routes.backend.importProcess.documentPlan(id),
+    {
+      ...bearerConfig(accessToken),
+      params: snapshotId ? { duimp_snapshot_id: snapshotId } : undefined,
+    },
+  );
+  return response.data;
+}
+
+export async function createNfeDocumentPlan(
+  accessToken: string,
+  id: string,
+  payload: CreateNfeDocumentPlanPayload,
+) {
+  const response = await apiClient.post<NfeDocumentPlan>(
+    routes.backend.importProcess.documentPlan(id),
     payload,
     bearerConfig(accessToken),
   );
