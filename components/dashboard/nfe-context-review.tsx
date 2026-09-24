@@ -148,6 +148,11 @@ export function NfeContextReview({
     }
   }
 
+  async function retryLoad() {
+    setActionError(null);
+    await mutate();
+  }
+
   return (
     <>
       <section className="surface-card mt-6 overflow-hidden">
@@ -173,7 +178,7 @@ export function NfeContextReview({
         {error || actionError ? (
           <div className="p-8 text-center">
             <p className="text-sm text-destructive">{actionError ?? bffErrorMessage(error)}</p>
-            <button type="button" className="button button-secondary mt-4" onClick={() => mutate()}><RefreshCw size={16} /> Tentar novamente</button>
+            <button type="button" className="button button-secondary mt-4" onClick={retryLoad}><RefreshCw size={16} /> Tentar novamente</button>
           </div>
         ) : isLoading || !data ? (
           <div className="grid gap-4 p-6 sm:grid-cols-2 xl:grid-cols-4" aria-label="Carregando contexto fiscal">
@@ -198,7 +203,7 @@ export function NfeContextReview({
               <ContextItem label="UF do desembaraço" value={data.normalized.clearance_state} source={data.fields.clearance_state?.source} />
               <ContextItem label="Data de desembaraço" value={data.normalized.clearance_date} source={data.fields.clearance_date?.source} />
               <ContextItem label="Via de transporte" value={data.normalized.transport_mode_code ? `${data.normalized.transport_mode_code} — ${transportModes[data.normalized.transport_mode_code] ?? "Não identificada"}` : null} source={data.fields.transport_mode_code?.source} />
-              <ContextItem label="Fornecedor estrangeiro" value={data.normalized.foreign_supplier?.name} />
+              <ContextItem label="Fornecedor estrangeiro" value={data.normalized.foreign_supplier?.name} source={data.fields["foreign_supplier.name"]?.source} />
               <ContextItem label="País do fornecedor" value={data.normalized.foreign_supplier?.country_name} source={data.fields["foreign_supplier.country_name"]?.source} />
               <ContextItem label="Código do país" value={data.normalized.foreign_supplier?.country_code} source={data.fields["foreign_supplier.country_code"]?.source} />
             </dl>

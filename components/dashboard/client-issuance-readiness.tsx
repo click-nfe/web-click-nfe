@@ -10,69 +10,48 @@ import {
 import Link from "next/link";
 import useSWR from "swr";
 
-import type { ClientImportTaxRuleDiagnostics } from "@/lib/api/client-import-tax-rule";
-import type { FiscalCertificateRecord } from "@/lib/api/fiscal-certificate";
+import type { ClientIssuanceReadinessSnapshot } from "@/lib/api/client-issuance-readiness";
 import type { NfeNumberSequence } from "@/lib/api/nfe-number-sequence";
-import type { PortalUnicoSettings } from "@/lib/api/organization";
 import { routes } from "@/lib/api/routes";
 import { bffFetcher } from "@/lib/bff/client";
-import { getClientFiscalProfile } from "@/lib/bff/client-fiscal-profile";
-import { listNfeNumberSequences } from "@/lib/bff/nfe-number-sequence";
 
 export function useClientIssuanceReadiness(clientId?: string) {
-  const fiscalProfile = useSWR(
-    clientId ? ["issuance-fiscal-profile", clientId] : null,
-    () => getClientFiscalProfile(clientId as string),
-  );
-  const certificates = useSWR<FiscalCertificateRecord[]>(
-    clientId ? routes.bff.client.fiscalCertificates(clientId) : null,
+  const request = useSWR<ClientIssuanceReadinessSnapshot>(
+    clientId ? routes.bff.client.issuanceReadiness(clientId) : null,
     bffFetcher,
+    {
+      dedupingInterval: 0,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+    },
   );
-  const taxRules = useSWR<ClientImportTaxRuleDiagnostics>(
-    clientId ? routes.bff.client.importTaxRuleDiagnostics(clientId) : null,
-    bffFetcher,
-  );
-  const numberSequences = useSWR(
-    clientId ? ["issuance-number-sequences", clientId] : null,
-    () => listNfeNumberSequences(clientId as string),
-  );
-  const portal = useSWR<PortalUnicoSettings>(
-    clientId ? routes.bff.organization.portalUnico : null,
-    bffFetcher,
-  );
-
-  const activeSequence = numberSequences.data?.find(
-    (item) => item.environment === "production" && item.model === "55" && item.status === "active",
-  );
-  const activeCertificate = certificates.data?.find(
-    (item) => item.environment === "production" && item.status === "active" && item.is_active,
-  );
-  const errors = [fiscalProfile.error, certificates.error, taxRules.error, numberSequences.error, portal.error].filter(Boolean);
 
   return {
-    hasFiscalProfile: Boolean(fiscalProfile.data),
-    activeSequence,
-    hasPortalConnection: Boolean(portal.data?.ready_for_duimp),
-    activeTaxRules: taxRules.data?.summary.active ?? 0,
-    taxRuleConflicts: taxRules.data?.summary.conflict_count ?? 0,
-    activeCertificate,
-    loading: [fiscalProfile, certificates, taxRules, numberSequences, portal].some(
-      (request) => request.isLoading,
-    ),
-    hasError: errors.length > 0,
-    refresh: async () => {
-      await Promise.all([
-        fiscalProfile.mutate(),
-        certificates.mutate(),
-        taxRules.mutate(),
-        numberSequences.mutate(),
-        portal.mutate(),
-      ]);
+    hasFiscalProfile: request.data?.has_fiscal_profile ?? false,
+    activeSequence: request.data?.active_sequence ?? undefined,
+    hasPortalConnection: request.data?.has_portal_connection ?? false,
+    activeTaxRules: request.data?.active_tax_rules ?? 0,
+    taxRuleConflicts: request.data?.tax_rule_conflicts ?? 0,
+    activeCertificate: request.data?.active_certificate ?? undefined,
+    refreshedAt: request.data?.refreshed_at,
+    loading: request.isLoading,
+    refreshing: request.isValidating,
+    hasError: Boolean(request.error),
+    refresh: () => request.mutate(undefined, { revalidate: true }),
+    setSequence: async (sequence: NfeNumberSequence) => {
+      await request.mutate(
+        (current) =>
+          current
+            ? {
+                ...current,
+                active_sequence: sequence,
+                refreshed_at: new Date().toISOString(),
+              }
+            : current,
+        { revalidate: false },
+      );
+      await request.mutate(undefined, { revalidate: true });
     },
-    setSequence: (sequence: NfeNumberSequence) => numberSequences.mutate(
-      (current) => [sequence, ...(current ?? []).filter((item) => item.id !== sequence.id)],
-      { revalidate: false },
-    ),
   };
 }
 
@@ -134,8 +113,14 @@ export function ClientIssuanceReadinessPanel({
             Os requisitos são liberados conforme cada etapa do processo. Links abrem em uma nova guia para preservar este fluxo.
           </p>
         </div>
-        <button type="button" className="button button-secondary min-h-9 px-3 text-xs" onClick={() => readiness.refresh()}>
-          <RefreshCw size={14} /> Atualizar
+        <button
+          type="button"
+          className="button button-secondary min-h-9 px-3 text-xs"
+          onClick={() => readiness.refresh()}
+          disabled={readiness.refreshing}
+        >
+          <RefreshCw className={readiness.refreshing ? "animate-spin" : ""} size={14} />
+          {readiness.refreshing ? "Atualizando..." : "Atualizar"}
         </button>
       </div>
 

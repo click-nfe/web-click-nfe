@@ -13,7 +13,6 @@ import { FormEvent, useRef, useState } from "react";
 import useSWR from "swr";
 
 import type {
-  FiscalCertificateEnvironment,
   FiscalCertificateRecord,
   FiscalCertificateStatus,
 } from "@/lib/api/fiscal-certificate";
@@ -34,11 +33,6 @@ const statusLabels: Record<FiscalCertificateStatus, string> = {
   revoked: "Revogado",
   disabled: "Inativo",
   invalid: "Inválido",
-};
-
-const environmentLabels: Record<FiscalCertificateEnvironment, string> = {
-  homologation: "Homologação",
-  production: "Produção",
 };
 
 function formatDate(value: string | null) {
@@ -69,8 +63,6 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
     bffFetcher,
   );
   const fileInput = useRef<HTMLInputElement>(null);
-  const [environment, setEnvironment] =
-    useState<FiscalCertificateEnvironment>("homologation");
   const [password, setPassword] = useState("");
   const [uploading, setUploading] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -93,7 +85,7 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
     setFormError(null);
     setNotice(null);
     try {
-      await uploadFiscalCertificate(clientId, file, password, environment);
+      await uploadFiscalCertificate(clientId, file, password);
       setPassword("");
       if (fileInput.current) fileInput.current.value = "";
       setNotice(
@@ -120,7 +112,7 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
     try {
       if (action === "activate") {
         await activateFiscalCertificate(clientId, certificate.id);
-        setNotice(`Certificado de ${environmentLabels[certificate.environment]} ativado.`);
+        setNotice("Certificado de produção ativado.");
       } else {
         await validateFiscalCertificate(clientId, certificate.id);
         setNotice("Certificado validado novamente com sucesso.");
@@ -142,7 +134,7 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
             <p className="eyebrow">Assinatura digital</p>
             <h2 className="mt-3 text-2xl font-semibold">Certificados eCNPJ A1</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Certificados cadastrados para homologação e produção. Somente um pode ficar ativo por ambiente.
+              Certificados de produção usados para assinar as NF-e reais deste cliente.
             </p>
           </div>
           <button type="button" className="button button-primary shrink-0" onClick={() => { setFormError(null); setSheetOpen(true); }}>
@@ -172,15 +164,15 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
               <div key={item} className="h-32 animate-pulse rounded-xl bg-muted" />
             ))}
           </div>
-        ) : data?.length ? (
+        ) : data?.filter((certificate) => certificate.environment === "production").length ? (
           <div className="divide-y divide-border">
-            {data.map((certificate) => (
+            {data.filter((certificate) => certificate.environment === "production").map((certificate) => (
               <article key={certificate.id} className="p-6 sm:p-8">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold">
-                        {environmentLabels[certificate.environment]}
+                        Produção
                       </span>
                       <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(certificate.status)}`}>
                         {statusLabels[certificate.status]}
@@ -260,13 +252,9 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" className="field-input" disabled={uploading || actionId !== null} required />
             <span className="text-xs font-normal text-muted-foreground">A senha não retorna pela API nem é armazenada no banco.</span>
           </label>
-          <label className="grid gap-2 text-sm font-semibold">
-            Ambiente
-            <select value={environment} onChange={(event) => setEnvironment(event.target.value as FiscalCertificateEnvironment)} className="field-input" disabled={uploading || actionId !== null}>
-              <option value="homologation">Homologação</option>
-              <option value="production">Produção</option>
-            </select>
-          </label>
+          <div className="rounded-xl border border-primary/15 bg-sage-soft p-4 text-sm text-sage-strong">
+            Ambiente: <strong>Produção</strong>. O fluxo de emissão não utiliza mais homologação.
+          </div>
           {formError ? <p className="text-sm text-destructive" role="alert">{formError}</p> : null}
           <div className="sticky bottom-0 flex justify-end gap-3 border-t border-border bg-background py-5">
             <button type="button" className="button button-secondary" onClick={() => setSheetOpen(false)} disabled={uploading}>Cancelar</button>

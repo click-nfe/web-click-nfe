@@ -50,10 +50,10 @@ export async function POST(request: NextRequest, context: Context) {
     !(certificate instanceof File) ||
     typeof password !== "string" ||
     !password ||
-    (environment !== "homologation" && environment !== "production")
+    environment !== "production"
   ) {
     return NextResponse.json(
-      { error: "invalid_payload", message: "Certificado, senha e ambiente são obrigatórios." },
+      { error: "invalid_payload", message: "Certificado e senha de produção são obrigatórios." },
       { status: 400 },
     );
   }
