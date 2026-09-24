@@ -29,15 +29,43 @@ export type UpsertNfeNumberSequencePayload = {
   status: "active" | "inactive";
 };
 
+type SerializedNfeNumberSequence = Omit<
+  NfeNumberSequence,
+  "environment" | "status"
+> & {
+  environment: string;
+  status: string;
+};
+
+function enumValue(value: string) {
+  return value.slice(value.lastIndexOf(".") + 1).toLowerCase();
+}
+
+function normalizeNfeNumberSequence(
+  sequence: SerializedNfeNumberSequence,
+): NfeNumberSequence {
+  const environment = enumValue(sequence.environment);
+  const status = enumValue(sequence.status);
+
+  if (
+    (environment !== "production" && environment !== "homologation") ||
+    (status !== "active" && status !== "inactive")
+  ) {
+    throw new Error("A API retornou uma sequência NF-e com enums inválidos.");
+  }
+
+  return { ...sequence, environment, status };
+}
+
 export async function listNfeNumberSequences(
   accessToken: string,
   clientId: string,
 ) {
-  const response = await apiClient.get<NfeNumberSequence[]>(
+  const response = await apiClient.get<SerializedNfeNumberSequence[]>(
     routes.backend.client.nfeNumberSequences(clientId),
     bearerConfig(accessToken),
   );
-  return response.data;
+  return response.data.map(normalizeNfeNumberSequence);
 }
 
 export async function upsertNfeNumberSequence(
@@ -45,10 +73,10 @@ export async function upsertNfeNumberSequence(
   clientId: string,
   payload: UpsertNfeNumberSequencePayload,
 ) {
-  const response = await apiClient.put<NfeNumberSequence>(
+  const response = await apiClient.put<SerializedNfeNumberSequence>(
     routes.backend.client.nfeNumberSequences(clientId),
     payload,
     bearerConfig(accessToken),
   );
-  return response.data;
+  return normalizeNfeNumberSequence(response.data);
 }
