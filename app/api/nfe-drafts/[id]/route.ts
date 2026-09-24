@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { getNfeDraft } from "@/lib/api/import-process";
+import { getNfeDraft, updateNfeDraft } from "@/lib/api/import-process";
 import { importProcessApiErrorResponse } from "@/lib/api/import-process-route-helpers";
 import { ACCESS_COOKIE } from "@/lib/auth-cookies";
 
@@ -17,5 +17,16 @@ export async function GET(_request: Request, context: Context) {
     return NextResponse.json(await getNfeDraft(token, id));
   } catch (error) {
     return importProcessApiErrorResponse("nfe-draft.get", error);
+  }
+}
+
+export async function PATCH(request: Request, context: Context) {
+  const token = (await cookies()).get(ACCESS_COOKIE)?.value;
+  if (!token) return NextResponse.json({ error: "Sessão não encontrada." }, { status: 401 });
+  const { id } = await context.params;
+  try {
+    return NextResponse.json(await updateNfeDraft(token, id, await request.json()));
+  } catch (error) {
+    return importProcessApiErrorResponse("nfe-draft.update", error);
   }
 }

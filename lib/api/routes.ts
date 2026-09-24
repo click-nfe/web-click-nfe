@@ -80,6 +80,10 @@ export const routes = {
       drafts: (id: string) =>
         `/import-processes/${resourceId(id)}/nfe-drafts`,
       draft: (id: string) => `/nfe-drafts/${resourceId(id)}`,
+      draftItem: (id: string, itemId: string) =>
+        `/nfe-drafts/${resourceId(id)}/items/${resourceId(itemId)}`,
+      draftItemTaxAdjustment: (id: string, itemId: string) =>
+        `/nfe-drafts/${resourceId(id)}/items/${resourceId(itemId)}/tax-adjustment`,
       draftValidate: (id: string) =>
         `/nfe-drafts/${resourceId(id)}/validate`,
     },
@@ -114,6 +118,10 @@ export const routes = {
       drafts: (id: string) =>
         `/api/import-processes/${resourceId(id)}/drafts`,
       draft: (id: string) => `/api/nfe-drafts/${resourceId(id)}`,
+      draftItem: (id: string, itemId: string) =>
+        `/api/nfe-drafts/${resourceId(id)}/items/${resourceId(itemId)}`,
+      draftItemTaxAdjustment: (id: string, itemId: string) =>
+        `/api/nfe-drafts/${resourceId(id)}/items/${resourceId(itemId)}/tax-adjustment`,
       draftValidate: (id: string) =>
         `/api/nfe-drafts/${resourceId(id)}/validate`,
     },

@@ -17,6 +17,9 @@ import type {
   ResolveNfeContextPayload,
   SaveNfeItemClassificationsPayload,
   UpdateImportProcessPayload,
+  UpdateNfeDraftPayload,
+  UpdateNfeDraftItemPayload,
+  AdjustNfeDraftItemTaxPayload,
 } from "@/lib/api/import-process";
 import { routes } from "@/lib/api/routes";
 import { bffClient } from "@/lib/bff/client";
@@ -151,6 +154,35 @@ export async function generateNfeChildDrafts(id: string, snapshotId: string) {
 
 export function nfeDraftUrl(draftId: string) {
   return routes.bff.importProcess.draft(draftId);
+}
+
+export async function updateNfeDraft(draftId: string, payload: UpdateNfeDraftPayload) {
+  const response = await bffClient.patch(routes.bff.importProcess.draft(draftId), payload);
+  return response.data;
+}
+
+export async function updateNfeDraftItem(
+  draftId: string,
+  itemId: string,
+  payload: UpdateNfeDraftItemPayload,
+) {
+  const response = await bffClient.patch(
+    routes.bff.importProcess.draftItem(draftId, itemId),
+    payload,
+  );
+  return response.data;
+}
+
+export async function adjustNfeDraftItemTax(
+  draftId: string,
+  itemId: string,
+  payload: AdjustNfeDraftItemTaxPayload,
+) {
+  const response = await bffClient.patch(
+    routes.bff.importProcess.draftItemTaxAdjustment(draftId, itemId),
+    payload,
+  );
+  return response.data;
 }
 
 export async function validateNfeDraft(draftId: string) {
