@@ -58,11 +58,19 @@ function parsePayload(value: unknown): ResolveNfeContextPayload | null {
     const name = optionalText(source.foreign_supplier.name, 255);
     const countryCode = optionalText(source.foreign_supplier.country_code, 10);
     const countryName = optionalText(source.foreign_supplier.country_name, 120);
-    if (name === null || countryCode === null || countryName === null) return null;
+    const countryIso = optionalText(source.foreign_supplier.country_iso_alpha_2, 2);
+    if (
+      name === null ||
+      countryCode === null ||
+      countryName === null ||
+      countryIso === null ||
+      (countryIso && !/^[A-Za-z]{2}$/.test(countryIso))
+    ) return null;
     foreignSupplier = {
       ...(name ? { name } : {}),
       ...(countryCode ? { country_code: countryCode } : {}),
       ...(countryName ? { country_name: countryName } : {}),
+      ...(countryIso ? { country_iso_alpha_2: countryIso.toUpperCase() } : {}),
     };
   }
 

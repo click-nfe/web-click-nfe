@@ -218,6 +218,12 @@ export type NfeContextState = {
   fiscal_references?: Record<string, unknown>;
   tax_rule?: Record<string, unknown> | null;
   tax_rules?: Array<Record<string, unknown>>;
+  refresh?: {
+    requested: boolean;
+    snapshot_changed: boolean;
+    previous_snapshot_id: string;
+    snapshot_id: string;
+  };
 };
 
 export type ResolveNfeContextPayload = {
@@ -232,6 +238,7 @@ export type ResolveNfeContextPayload = {
       name?: string;
       country_code?: string;
       country_name?: string;
+      country_iso_alpha_2?: string;
     };
   };
 };
