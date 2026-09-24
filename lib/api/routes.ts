@@ -71,6 +71,8 @@ export const routes = {
         `/import-processes/${resourceId(id)}/nfe-context/resolve`,
       itemClassifications: (id: string) =>
         `/import-processes/${resourceId(id)}/item-classifications`,
+      documentPlan: (id: string) =>
+        `/import-processes/${resourceId(id)}/nfe-document-plan`,
     },
   },
   bff: {
@@ -96,6 +98,8 @@ export const routes = {
         `/api/import-processes/${resourceId(id)}/context`,
       itemClassifications: (id: string) =>
         `/api/import-processes/${resourceId(id)}/classifications`,
+      documentPlan: (id: string) =>
+        `/api/import-processes/${resourceId(id)}/document-plan`,
     },
     client: {
       list: "/api/clients",
