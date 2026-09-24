@@ -118,6 +118,8 @@ export const routes = {
         `/api/clients/${resourceId(id)}/import-tax-rules/simulate`,
       nfeNumberSequences: (id: string) =>
         `/api/clients/${resourceId(id)}/nfe-number-sequences`,
+      issuanceReadiness: (id: string) =>
+        `/api/clients/${resourceId(id)}/issuance-readiness`,
     },
     fiscalReference: {
       postalCode: (zipCode: string) =>

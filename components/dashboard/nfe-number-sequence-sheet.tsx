@@ -20,7 +20,7 @@ export function NfeNumberSequenceSheet({
   onOpenChange: (open: boolean) => void;
   clientId: string;
   sequence?: NfeNumberSequence;
-  onSaved: (sequence: NfeNumberSequence) => void;
+  onSaved: (sequence: NfeNumberSequence) => void | Promise<void>;
 }) {
   return (
     <Sheet
@@ -34,8 +34,8 @@ export function NfeNumberSequenceSheet({
           clientId={clientId}
           sequence={sequence}
           onCancel={() => onOpenChange(false)}
-          onSaved={(saved) => {
-            onSaved(saved);
+          onSaved={async (saved) => {
+            await onSaved(saved);
             onOpenChange(false);
           }}
         />
@@ -53,7 +53,7 @@ function NfeNumberSequenceForm({
   clientId: string;
   sequence?: NfeNumberSequence;
   onCancel: () => void;
-  onSaved: (sequence: NfeNumberSequence) => void;
+  onSaved: (sequence: NfeNumberSequence) => void | Promise<void>;
 }) {
   const { user } = useDashboardSession();
   const [series, setSeries] = useState(sequence?.series ?? "1");
@@ -83,7 +83,7 @@ function NfeNumberSequenceForm({
         status: "active",
         ...(sequence ? {} : { current_number: initial - 1 }),
       });
-      onSaved(saved);
+      await onSaved(saved);
     } catch (requestError) {
       setError(bffErrorMessage(requestError));
     } finally {
