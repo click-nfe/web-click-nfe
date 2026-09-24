@@ -410,6 +410,7 @@ export type NfeDraftItem = {
   description: string;
   ncm: string;
   cfop: string;
+  cest?: string | null;
   commercial_unit: string;
   commercial_quantity: string;
   commercial_unit_value: string;
@@ -444,6 +445,94 @@ export type NfeDraftValidation = {
   valid: boolean;
   errors: NfeValidationIssue[];
   warnings: NfeValidationIssue[];
+};
+
+export type UpdateNfeDraftPayload = {
+  document?: {
+    operation_nature?: string | null;
+    presence_indicator?: string | null;
+    intermediary_indicator?: string | null;
+  };
+  issuer?: { state_registration?: string | null };
+  foreign_supplier?: {
+    legal_name?: string | null;
+    foreign_id?: string | null;
+    country_code?: string | null;
+    country_name?: string | null;
+    country_iso_alpha_2?: string | null;
+    address?: {
+      street?: string | null;
+      number?: string | null;
+      complement?: string | null;
+      district?: string | null;
+      city_name?: string | null;
+    };
+  };
+  transport?: {
+    freight_mode?: string;
+    carrier?: {
+      tax_id?: string | null;
+      name?: string | null;
+      state_registration?: string | null;
+      address?: string | null;
+      city_name?: string | null;
+      state?: string | null;
+    } | null;
+    volume?: {
+      quantity?: number | null;
+      species?: string | null;
+      brand?: string | null;
+      numbering?: string | null;
+      net_weight?: string | null;
+      gross_weight?: string | null;
+    } | null;
+  };
+  payment?: {
+    payment_indicator?: string;
+    method?: string;
+    description?: string | null;
+    value?: string | null;
+  };
+  additional_info?: {
+    automatic_summary?: boolean;
+    fiscal?: string | null;
+    complementary?: string | null;
+    legal_text?: string | null;
+  };
+  additional_costs?: NfeSharedCosts;
+};
+
+export type UpdateNfeDraftItemPayload = {
+  product_code?: string;
+  description?: string;
+  ncm?: string;
+  cfop?: string;
+  cest?: string | null;
+  commercial_unit?: string;
+  commercial_quantity?: string;
+  commercial_unit_value?: string;
+  taxable_unit?: string;
+  taxable_quantity?: string;
+  taxable_unit_value?: string;
+  product_value?: string;
+  freight_value?: string;
+  insurance_value?: string;
+  discount_value?: string;
+  other_value?: string;
+  import_payload?: Record<string, unknown> | null;
+};
+
+export type AdjustNfeDraftItemTaxPayload = {
+  source: "manual_adjustment";
+  reason: string;
+  cfop?: string;
+  icms: {
+    cst: string;
+    base: string;
+    rate?: string | null;
+    reduction_rate?: string | null;
+    deferment_rate?: string | null;
+  };
 };
 
 export type NfeDocumentPlan = {
@@ -712,6 +801,47 @@ export async function getNfeDraft(
 ) {
   const response = await apiClient.get<NfeDraftDetail>(
     routes.backend.importProcess.draft(draftId),
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function updateNfeDraft(
+  accessToken: string,
+  draftId: string,
+  payload: UpdateNfeDraftPayload,
+) {
+  const response = await apiClient.patch(
+    routes.backend.importProcess.draft(draftId),
+    payload,
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function updateNfeDraftItem(
+  accessToken: string,
+  draftId: string,
+  itemId: string,
+  payload: UpdateNfeDraftItemPayload,
+) {
+  const response = await apiClient.patch<NfeDraftItem>(
+    routes.backend.importProcess.draftItem(draftId, itemId),
+    payload,
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function adjustNfeDraftItemTax(
+  accessToken: string,
+  draftId: string,
+  itemId: string,
+  payload: AdjustNfeDraftItemTaxPayload,
+) {
+  const response = await apiClient.patch(
+    routes.backend.importProcess.draftItemTaxAdjustment(draftId, itemId),
+    payload,
     bearerConfig(accessToken),
   );
   return response.data;

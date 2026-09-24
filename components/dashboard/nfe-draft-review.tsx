@@ -5,12 +5,14 @@ import {
   CheckCircle2,
   FileCheck2,
   Files,
+  ExternalLink,
   LoaderCircle,
   RefreshCw,
   Search,
   ShieldAlert,
 } from "lucide-react";
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 
 import { Sheet } from "@/components/ui/sheet";
@@ -43,7 +45,8 @@ function display(value: unknown, fallback = "Não informado") {
 }
 
 function formatMoney(value: unknown) {
-  const amount = Number(value ?? 0);
+  if (value === null || value === undefined || value === "") return "Não informado";
+  const amount = Number(value);
   return Number.isFinite(amount)
     ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(amount)
     : display(value);
@@ -87,6 +90,28 @@ export function NfeDraftReviewPanel({
   const [actionError, setActionError] = useState<string | null>(null);
   const [selectedDraft, setSelectedDraft] = useState<{ id: string; title: string } | null>(null);
   const drafted = plan.documents.filter((document) => document.draft);
+
+  useEffect(() => {
+    let refreshing = false;
+    async function refresh() {
+      if (refreshing) return;
+      refreshing = true;
+      try {
+        await Promise.all([onPlanRefresh(), onWorkflowChange()]);
+      } finally {
+        refreshing = false;
+      }
+    }
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "click-nfe:draft-updated") void refresh();
+    };
+    window.addEventListener("focus", refresh);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [onPlanRefresh, onWorkflowChange]);
 
   async function generate() {
     setGenerating(true);
@@ -148,6 +173,7 @@ export function NfeDraftReviewPanel({
               <DraftCard
                 key={document.id}
                 document={document}
+                processId={processId}
                 onOpen={(draft) => setSelectedDraft({ id: draft.id, title: supplierName(document) })}
               />
             ))}
@@ -165,6 +191,7 @@ export function NfeDraftReviewPanel({
 
       <DraftReviewSheet
         draft={selectedDraft}
+        processId={processId}
         onClose={() => setSelectedDraft(null)}
         onValidated={async () => {
           await Promise.all([onPlanRefresh(), onWorkflowChange()]);
@@ -174,7 +201,7 @@ export function NfeDraftReviewPanel({
   );
 }
 
-function DraftCard({ document, onOpen }: { document: NfePlannedDocument; onOpen: (draft: NfeDraftSummary) => void }) {
+function DraftCard({ document, processId, onOpen }: { document: NfePlannedDocument; processId: string; onOpen: (draft: NfeDraftSummary) => void }) {
   const draft = document.draft;
   if (!draft) {
     return <article className="flex items-center justify-between gap-4 rounded-2xl border border-dashed border-border p-5"><div><p className="font-semibold">NF-e filha {document.ordinal} · {supplierName(document)}</p><p className="mt-1 text-sm text-muted-foreground">Aguardando geração do rascunho.</p></div><span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">Pendente</span></article>;
@@ -187,7 +214,10 @@ function DraftCard({ document, onOpen }: { document: NfePlannedDocument; onOpen:
           {valid ? <CheckCircle2 className="mt-0.5 shrink-0 text-primary" size={21} /> : <ShieldAlert className="mt-0.5 shrink-0 text-amber-600" size={21} />}
           <div><p className="font-semibold">NF-e filha {document.ordinal} · {supplierName(document)}</p><p className="mt-1 text-sm text-muted-foreground">{document.items_count} item(ns) · Série {draft.series} · {statusLabels[draft.status] ?? draft.status}</p></div>
         </div>
-        <button type="button" className="button button-secondary" onClick={() => onOpen(draft)}><Search size={16} /> Revisar rascunho</button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="button button-secondary" onClick={() => onOpen(draft)}><Search size={16} /> Consultar</button>
+          <Link href={`/dashboard/processos/${processId}/rascunhos/${draft.id}`} target="_blank" className="button button-primary"><ExternalLink size={16} /> Configurar nota</Link>
+        </div>
       </div>
       {draft.validation_errors.length || draft.validation_warnings.length ? (
         <div className="flex flex-wrap gap-2 border-t border-border px-5 py-3 text-xs">
@@ -201,10 +231,12 @@ function DraftCard({ document, onOpen }: { document: NfePlannedDocument; onOpen:
 
 function DraftReviewSheet({
   draft,
+  processId,
   onClose,
   onValidated,
 }: {
   draft: { id: string; title: string } | null;
+  processId: string;
   onClose: () => void;
   onValidated: () => Promise<unknown>;
 }) {
@@ -241,6 +273,7 @@ function DraftReviewSheet({
       {request.data ? (
         <div className="sticky bottom-0 mt-7 flex justify-end gap-3 border-t border-border bg-background py-4">
           <button type="button" className="button button-secondary" onClick={onClose}>Fechar</button>
+          {draft ? <Link href={`/dashboard/processos/${processId}/rascunhos/${draft.id}`} target="_blank" className="button button-secondary"><ExternalLink size={16} /> Configurar nota</Link> : null}
           <button type="button" className="button button-primary" disabled={validating} onClick={validate}>{validating ? <LoaderCircle className="animate-spin" size={16} /> : <RefreshCw size={16} />}{validating ? "Validando..." : "Revalidar rascunho"}</button>
         </div>
       ) : null}
@@ -252,7 +285,8 @@ function DraftDetails({ detail }: { detail: NfeDraftDetail }) {
   const payload = object(detail.draft.fiscal_payload);
   const document = object(payload.document);
   const issuer = object(payload.issuer);
-  const supplier = object(payload.foreign_supplier);
+  const supplier = object(payload.recipient);
+  const supplierAddress = object(supplier.address);
   const transport = object(payload.transport);
   const carrier = object(transport.carrier);
   const volume = object(transport.volume);
@@ -275,7 +309,7 @@ function DraftDetails({ detail }: { detail: NfeDraftDetail }) {
       </ReviewSection>
 
       <ReviewSection title="Emitente e fornecedor estrangeiro">
-        <InfoGrid fields={[["Emitente", issuer.legal_name ?? issuer.name], ["CNPJ", issuer.cnpj ?? issuer.tax_id], ["Inscrição estadual", issuer.state_registration], ["Fornecedor", supplier.legal_name ?? supplier.name], ["Identificação estrangeira", supplier.foreign_id ?? supplier.foreign_tax_id], ["País", supplier.country_name ?? supplier.country_code]]} />
+        <InfoGrid fields={[["Emitente", issuer.legal_name ?? issuer.name], ["CNPJ", issuer.cnpj ?? issuer.tax_id], ["Inscrição estadual", issuer.state_registration], ["Fornecedor", supplier.legal_name ?? supplier.name], ["Identificação estrangeira", supplier.foreign_id ?? supplier.foreign_tax_id], ["País", supplierAddress.country_name ?? supplierAddress.country_code]]} />
       </ReviewSection>
 
       <ReviewSection title="Transporte e volumes">
