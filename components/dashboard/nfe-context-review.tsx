@@ -15,6 +15,7 @@ import { FormEvent, useState } from "react";
 import useSWR from "swr";
 
 import { Sheet } from "@/components/ui/sheet";
+import { CountrySearch } from "@/components/dashboard/fiscal-reference-search";
 import type { ImportPurpose } from "@/lib/api/client-import-tax-rule";
 import type {
   NfeContextState,
@@ -73,6 +74,7 @@ const sourceLabels: Record<string, string> = {
   portal_unico_tabx: "Portal Único / TABX",
   portal_unico_cct: "Portal Único / CCT",
   builtin_official_reference: "Referência oficial local",
+  local_fiscal_reference: "Catálogo fiscal local",
   provider_configuration: "Configuração do provedor",
   operator_override: "Informado pelo usuário",
 };
@@ -135,7 +137,7 @@ export function NfeContextReview({
     setActionError(null);
     try {
       const resolved = await resolveNfeContext(processId, {
-        duimp_snapshot_id: snapshotId,
+        duimp_snapshot_id: data?.snapshot_id ?? snapshotId,
         refresh_external: true,
         overrides: {},
       });
@@ -167,7 +169,7 @@ export function NfeContextReview({
           <div className="flex flex-wrap gap-2">
             <button type="button" className="button button-secondary" disabled={refreshing || isLoading} onClick={refreshOfficialSources}>
               {refreshing ? <LoaderCircle className="animate-spin" size={16} /> : <RefreshCw size={16} />}
-              {refreshing ? "Consultando..." : "Atualizar fontes oficiais"}
+              {refreshing ? "Consultando..." : "Atualizar dados da DUIMP"}
             </button>
             <button type="button" className="button button-primary" disabled={!data} onClick={() => setSheetOpen(true)}>
               <PencilLine size={16} /> Revisar dados
@@ -222,12 +224,22 @@ export function NfeContextReview({
                 </ul>
               </div>
             ) : null}
+            {data.refresh?.requested && !data.refresh.snapshot_changed && !data.external.errors?.length ? (
+              <p className="mt-6 rounded-xl bg-muted/60 p-4 text-sm text-muted-foreground">
+                A versão vigente foi consultada e não possui alterações em relação ao snapshot atual.
+              </p>
+            ) : null}
+            {data.refresh?.snapshot_changed ? (
+              <p className="mt-6 rounded-xl bg-sage-soft p-4 text-sm text-sage-strong">
+                Uma versão atualizada da DUIMP foi encontrada. O snapshot anterior foi preservado para auditoria.
+              </p>
+            ) : null}
           </div>
         )}
       </section>
 
       {data?.ready_for_draft ? (
-        <NfeItemClassificationSection processId={processId} clientId={clientId} snapshotId={snapshotId} onWorkflowChange={onWorkflowChange} />
+        <NfeItemClassificationSection processId={processId} clientId={clientId} snapshotId={data.snapshot_id} onWorkflowChange={onWorkflowChange} />
       ) : null}
 
       {data ? (
@@ -235,7 +247,7 @@ export function NfeContextReview({
           {sheetOpen ? (
             <NfeContextForm
               processId={processId}
-              snapshotId={snapshotId}
+              snapshotId={data.snapshot_id}
               context={data}
               onCancel={() => setSheetOpen(false)}
               onSaved={async (resolved) => {
@@ -273,6 +285,7 @@ function NfeContextForm({
     supplier_name: supplier.name ?? "",
     country_code: supplier.country_code ?? "",
     country_name: supplier.country_name ?? "",
+    country_iso_alpha_2: supplier.country_iso_alpha_2 ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -295,7 +308,14 @@ function NfeContextForm({
     if (changed(values.supplier_name, supplier.name)) foreignSupplier.name = values.supplier_name.trim();
     if (changed(values.country_code, supplier.country_code)) foreignSupplier.country_code = values.country_code.trim();
     if (changed(values.country_name, supplier.country_name)) foreignSupplier.country_name = values.country_name.trim();
+    if (changed(values.country_iso_alpha_2, supplier.country_iso_alpha_2)) foreignSupplier.country_iso_alpha_2 = values.country_iso_alpha_2.trim().toUpperCase();
     if (Object.keys(foreignSupplier).length) overrides.foreign_supplier = foreignSupplier;
+
+    if (!values.country_code.trim()) {
+      setError("Selecione o país do fornecedor na lista para identificar o código BACEN.");
+      setSaving(false);
+      return;
+    }
 
     try {
       const resolved = await resolveNfeContext(processId, {
@@ -323,8 +343,32 @@ function NfeContextForm({
         <h3 className="font-semibold">Fornecedor estrangeiro</h3>
         <div className="mt-4 grid gap-5 sm:grid-cols-2">
           <label className="sm:col-span-2"><span className="field-label">Nome</span><input className="field-input" value={values.supplier_name} onChange={(event) => setValue("supplier_name", event.target.value)} /></label>
-          <label><span className="field-label">Código do país *</span><input className="field-input" value={values.country_code} onChange={(event) => setValue("country_code", event.target.value)} required /></label>
-          <label><span className="field-label">País *</span><input className="field-input uppercase" value={values.country_name} onChange={(event) => setValue("country_name", event.target.value)} required /></label>
+          <div className="sm:col-span-2">
+            <CountrySearch
+              value={values.country_name}
+              selectedCode={values.country_code}
+              activeOn={context.normalized.registration_date}
+              disabled={saving}
+              onQueryChange={(countryName) => {
+                setValues((current) => ({
+                  ...current,
+                  country_name: countryName,
+                  country_code: "",
+                  country_iso_alpha_2: "",
+                }));
+                setError(null);
+              }}
+              onSelect={(country) => {
+                setValues((current) => ({
+                  ...current,
+                  country_name: country.name,
+                  country_code: country.bacen_code,
+                  country_iso_alpha_2: country.iso_alpha_2 ?? "",
+                }));
+                setError(null);
+              }}
+            />
+          </div>
         </div>
       </div>
       {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}

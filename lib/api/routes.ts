@@ -52,6 +52,8 @@ export const routes = {
     fiscalReference: {
       postalCode: (zipCode: string) =>
         `/fiscal-reference/postal-codes/${resourceId(zipCode)}`,
+      municipalities: "/fiscal-reference/municipalities",
+      countries: "/fiscal-reference/countries",
     },
     importProcess: {
       list: "/import-processes",
@@ -124,6 +126,8 @@ export const routes = {
     fiscalReference: {
       postalCode: (zipCode: string) =>
         `/api/fiscal-reference/postal-codes/${resourceId(zipCode)}`,
+      municipalities: "/api/fiscal-reference/municipalities",
+      countries: "/api/fiscal-reference/countries",
     },
   },
 } as const;

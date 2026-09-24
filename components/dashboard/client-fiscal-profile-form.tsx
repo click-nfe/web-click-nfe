@@ -19,6 +19,7 @@ import { lookupClientCompany } from "@/lib/bff/clients";
 import { lookupPostalCode } from "@/lib/bff/fiscal-reference";
 import { cnpjCharacters, formatCnpj } from "@/lib/client-display";
 import { Sheet } from "@/components/ui/sheet";
+import { MunicipalitySearch } from "@/components/dashboard/fiscal-reference-search";
 
 type FiscalProfileValues = {
   legal_name: string;
@@ -460,11 +461,40 @@ function FiscalProfileForm({
                 </span>
                 {inputError("zip_code")}
               </label>
-              <label>
-                <span className="field-label">Município *</span>
-                <input value={values.city_name} className="field-input bg-muted" readOnly />
+              <div>
+                <MunicipalitySearch
+                  value={values.city_name}
+                  selectedCode={values.city_code}
+                  disabled={lookingUpCompany || lookingUpZip}
+                  onQueryChange={(cityName) => {
+                    setValues((current) => ({
+                      ...current,
+                      city_name: cityName,
+                      city_code: "",
+                      state: "",
+                    }));
+                    setResolvedZip("");
+                  }}
+                  onSelect={(municipality) => {
+                    setValues((current) => ({
+                      ...current,
+                      city_name: municipality.name,
+                      city_code: municipality.code,
+                      state: municipality.state,
+                    }));
+                    setFieldErrors((current) => {
+                      const next = { ...current };
+                      delete next.city_name;
+                      delete next.city_code;
+                      delete next.state;
+                      delete next.zip_code;
+                      return next;
+                    });
+                    setNotice("Município, código IBGE e UF preenchidos pelo catálogo fiscal local.");
+                  }}
+                />
                 {inputError("city_name")}
-              </label>
+              </div>
               <label>
                 <span className="field-label">UF *</span>
                 <input value={values.state} className="field-input bg-muted" readOnly />
