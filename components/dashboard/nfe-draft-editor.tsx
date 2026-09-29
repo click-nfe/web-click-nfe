@@ -453,7 +453,7 @@ export function NfeDraftEditor({ processId, draftId }: { processId: string; draf
             <p className="mt-2 text-sm text-muted-foreground">DUIMP {text(duimp.number) || "não informada"} · Série {request.data.draft.series} · Ambiente de produção</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <StatusPill errors={request.data.draft.validation_errors.length} warnings={request.data.draft.validation_warnings.length} />
+            <StatusPill errors={request.data.draft.validation_errors?.length ?? 0} warnings={request.data.draft.validation_warnings?.length ?? 0} />
             <button type="button" className="button button-secondary" disabled={saving} onClick={reload}><RefreshCw size={16} /> Atualizar</button>
             <button type="submit" className="button button-primary" disabled={saving}>{saving ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />}{saving ? "Salvando..." : "Salvar e revalidar"}</button>
           </div>

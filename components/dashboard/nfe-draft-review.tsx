@@ -206,7 +206,9 @@ function DraftCard({ document, processId, onOpen }: { document: NfePlannedDocume
   if (!draft) {
     return <article className="flex items-center justify-between gap-4 rounded-2xl border border-dashed border-border p-5"><div><p className="font-semibold">NF-e filha {document.ordinal} · {supplierName(document)}</p><p className="mt-1 text-sm text-muted-foreground">Aguardando geração do rascunho.</p></div><span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">Pendente</span></article>;
   }
-  const valid = !draft.validation_errors.length;
+  const errors = draft.validation_errors ?? [];
+  const warnings = draft.validation_warnings ?? [];
+  const valid = !errors.length;
   return (
     <article className="rounded-2xl border border-border">
       <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -219,10 +221,10 @@ function DraftCard({ document, processId, onOpen }: { document: NfePlannedDocume
           <Link href={`/dashboard/processos/${processId}/rascunhos/${draft.id}`} target="_blank" className="button button-primary"><ExternalLink size={16} /> Configurar nota</Link>
         </div>
       </div>
-      {draft.validation_errors.length || draft.validation_warnings.length ? (
+      {errors.length || warnings.length ? (
         <div className="flex flex-wrap gap-2 border-t border-border px-5 py-3 text-xs">
-          {draft.validation_errors.length ? <span className="rounded-full bg-red-100 px-3 py-1 font-semibold text-red-700 dark:bg-red-950/50 dark:text-red-300">{draft.validation_errors.length} erro(s)</span> : null}
-          {draft.validation_warnings.length ? <span className="rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">{draft.validation_warnings.length} aviso(s)</span> : null}
+          {errors.length ? <span className="rounded-full bg-red-100 px-3 py-1 font-semibold text-red-700 dark:bg-red-950/50 dark:text-red-300">{errors.length} erro(s)</span> : null}
+          {warnings.length ? <span className="rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">{warnings.length} aviso(s)</span> : null}
         </div>
       ) : null}
     </article>
