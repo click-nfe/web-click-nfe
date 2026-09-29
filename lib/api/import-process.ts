@@ -381,8 +381,8 @@ export type NfeDraftSummary = {
   number: number | null;
   series: string;
   access_key: string | null;
-  validation_errors: NfeValidationIssue[];
-  validation_warnings: NfeValidationIssue[];
+  validation_errors: NfeValidationIssue[] | null;
+  validation_warnings: NfeValidationIssue[] | null;
   latest_xml: Record<string, unknown> | null;
   created_at: string | null;
   updated_at: string | null;
