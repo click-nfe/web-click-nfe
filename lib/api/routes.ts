@@ -77,6 +77,10 @@ export const routes = {
         `/import-processes/${resourceId(id)}/nfe-document-plan`,
       documentPlanDrafts: (id: string) =>
         `/import-processes/${resourceId(id)}/nfe-document-plan/generate-drafts`,
+      documentPlanXmls: (id: string) =>
+        `/import-processes/${resourceId(id)}/nfe-document-plan/generate-xmls`,
+      documentPlanXmlDownload: (id: string) =>
+        `/import-processes/${resourceId(id)}/nfe-document-plan/xmls/download`,
       drafts: (id: string) =>
         `/import-processes/${resourceId(id)}/nfe-drafts`,
       draft: (id: string) => `/nfe-drafts/${resourceId(id)}`,
@@ -86,6 +90,8 @@ export const routes = {
         `/nfe-drafts/${resourceId(id)}/items/${resourceId(itemId)}/tax-adjustment`,
       draftValidate: (id: string) =>
         `/nfe-drafts/${resourceId(id)}/validate`,
+      draftXmlDownload: (id: string, versionId: string) =>
+        `/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/download`,
     },
   },
   bff: {
@@ -124,6 +130,10 @@ export const routes = {
         `/api/nfe-drafts/${resourceId(id)}/items/${resourceId(itemId)}/tax-adjustment`,
       draftValidate: (id: string) =>
         `/api/nfe-drafts/${resourceId(id)}/validate`,
+      draftXmlDownload: (id: string, versionId: string) =>
+        `/api/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/download`,
+      documentPlanXmls: (id: string) =>
+        `/api/import-processes/${resourceId(id)}/xmls`,
     },
     client: {
       list: "/api/clients",

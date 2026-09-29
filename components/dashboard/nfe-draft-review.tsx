@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 
 import { Sheet } from "@/components/ui/sheet";
+import { NfeChildXmlPanel } from "@/components/dashboard/nfe-child-xml";
 import type {
   NfeDocumentPlan,
   NfeDraftDetail,
@@ -180,7 +181,7 @@ export function NfeDraftReviewPanel({
 
             {plan.progress.all_drafts_created ? (
               <div className="rounded-2xl border border-border bg-muted/35 p-4 text-sm text-muted-foreground">
-                O próximo checkpoint será a reserva controlada da numeração, geração das chaves de acesso e XMLs individuais. A transmissão à SEFAZ continua bloqueada.
+                Confira os rascunhos e avance para a etapa 7 para gerar e validar os XMLs individuais.
               </div>
             ) : null}
           </div>
@@ -188,6 +189,14 @@ export function NfeDraftReviewPanel({
 
         {actionError ? <p className="mx-6 mb-6 text-sm text-destructive" role="alert">{actionError}</p> : null}
       </section>
+
+      <NfeChildXmlPanel
+        processId={processId}
+        snapshotId={snapshotId}
+        plan={plan}
+        onPlanChange={onPlanChange}
+        onWorkflowChange={onWorkflowChange}
+      />
 
       <DraftReviewSheet
         draft={selectedDraft}

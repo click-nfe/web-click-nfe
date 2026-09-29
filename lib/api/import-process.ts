@@ -375,6 +375,31 @@ export type NfeValidationIssue = {
   [key: string]: unknown;
 };
 
+export type NfeXmlSummary = {
+  id: string;
+  version_number: number;
+  xml_type: string;
+  xsd_valid: boolean | null;
+  xsd_errors: Array<{ message?: string; line?: number | null; [key: string]: unknown }> | null;
+  generated_at: string | null;
+};
+
+export type NfeChildXmlResult = {
+  planned_document_id: string;
+  draft_id?: string;
+  xml_version_id?: string;
+  success: boolean;
+  xsd_valid?: boolean;
+  xsd_errors?: NfeXmlSummary["xsd_errors"];
+  message?: string;
+};
+
+export type GenerateNfeChildXmlsResult = {
+  all_valid: boolean;
+  results: NfeChildXmlResult[];
+  plan: NfeDocumentPlan;
+};
+
 export type NfeDraftSummary = {
   id: string;
   status: string;
@@ -383,7 +408,7 @@ export type NfeDraftSummary = {
   access_key: string | null;
   validation_errors: NfeValidationIssue[] | null;
   validation_warnings: NfeValidationIssue[] | null;
-  latest_xml: Record<string, unknown> | null;
+  latest_xml: NfeXmlSummary | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -857,4 +882,43 @@ export async function validateNfeDraft(
     bearerConfig(accessToken),
   );
   return response.data;
+}
+
+export async function generateNfeChildXmls(
+  accessToken: string,
+  id: string,
+  snapshotId: string,
+) {
+  const response = await apiClient.post<GenerateNfeChildXmlsResult>(
+    routes.backend.importProcess.documentPlanXmls(id),
+    { duimp_snapshot_id: snapshotId },
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function downloadNfeChildXmlBundle(
+  accessToken: string,
+  id: string,
+  snapshotId: string,
+) {
+  return apiClient.get<ArrayBuffer>(
+    routes.backend.importProcess.documentPlanXmlDownload(id),
+    {
+      ...bearerConfig(accessToken),
+      params: { duimp_snapshot_id: snapshotId },
+      responseType: "arraybuffer",
+    },
+  );
+}
+
+export async function downloadNfeDraftXml(
+  accessToken: string,
+  draftId: string,
+  versionId: string,
+) {
+  return apiClient.get<ArrayBuffer>(
+    routes.backend.importProcess.draftXmlDownload(draftId, versionId),
+    { ...bearerConfig(accessToken), responseType: "arraybuffer" },
+  );
 }
