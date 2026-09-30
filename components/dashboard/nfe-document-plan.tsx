@@ -13,6 +13,7 @@ import { FormEvent, useState } from "react";
 import useSWR from "swr";
 
 import { Sheet } from "@/components/ui/sheet";
+import { NfeSectionHeader } from "@/components/dashboard/nfe-section-header";
 import { NfeDraftReviewPanel } from "@/components/dashboard/nfe-draft-review";
 import type { ImportPurpose } from "@/lib/api/client-import-tax-rule";
 import type {
@@ -67,11 +68,13 @@ function supplierName(document: NfePlannedDocument) {
 
 export function NfeDocumentPlanPanel({
   processId,
+  clientId,
   snapshotId,
   requiresRebuild = false,
   onWorkflowChange,
 }: {
   processId: string;
+  clientId: string;
   snapshotId: string;
   requiresRebuild?: boolean;
   onWorkflowChange: () => Promise<unknown>;
@@ -134,21 +137,14 @@ export function NfeDocumentPlanPanel({
 
   return (
     <>
-      <section id="plano-de-notas" className="surface-card mt-6 scroll-mt-24 overflow-hidden">
-        <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
-          <div>
-            <p className="eyebrow">Etapa 5</p>
-            <h2 className="mt-2 text-2xl font-semibold">Plano de notas</h2>
-            <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-              A API separa uma NF-e por exportador e rateia as despesas compartilhadas pelo valor aduaneiro de cada item.
-            </p>
-          </div>
-          {plan ? (
+      <section id="plano-de-notas" className="surface-card mt-6 scroll-mt-56 lg:scroll-mt-40">
+        <NfeSectionHeader step={5} title="Plano de notas" summary="Uma NF-e por exportador e despesas rateadas" actions={
+          plan ? (
             <button type="button" className="button button-secondary" onClick={openEditor}>
               <PencilLine size={16} /> Recalcular despesas
             </button>
-          ) : null}
-        </div>
+          ) : null
+        } />
 
         {error && !data ? (
           <div className="p-8 text-center">
@@ -190,6 +186,7 @@ export function NfeDocumentPlanPanel({
       {plan ? (
         <NfeDraftReviewPanel
           processId={processId}
+          clientId={clientId}
           snapshotId={snapshotId}
           plan={plan}
           onPlanChange={async (nextPlan) => {

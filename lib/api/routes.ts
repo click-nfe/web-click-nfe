@@ -92,6 +92,10 @@ export const routes = {
         `/nfe-drafts/${resourceId(id)}/validate`,
       draftXmlDownload: (id: string, versionId: string) =>
         `/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/download`,
+      draftXmlSign: (id: string, versionId: string) =>
+        `/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/sign`,
+      draftDanfePreview: (id: string, versionId: string) =>
+        `/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/danfe-preview`,
     },
   },
   bff: {
@@ -132,6 +136,10 @@ export const routes = {
         `/api/nfe-drafts/${resourceId(id)}/validate`,
       draftXmlDownload: (id: string, versionId: string) =>
         `/api/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/download`,
+      draftXmlSign: (id: string, versionId: string) =>
+        `/api/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/sign`,
+      draftDanfePreview: (id: string, versionId: string) =>
+        `/api/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/danfe-preview`,
       documentPlanXmls: (id: string) =>
         `/api/import-processes/${resourceId(id)}/xmls`,
     },

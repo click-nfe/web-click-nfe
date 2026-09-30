@@ -15,6 +15,7 @@ import { FormEvent, useState } from "react";
 import useSWR from "swr";
 
 import { Sheet } from "@/components/ui/sheet";
+import { NfeSectionHeader } from "@/components/dashboard/nfe-section-header";
 import { CountrySearch } from "@/components/dashboard/fiscal-reference-search";
 import type { ImportPurpose } from "@/lib/api/client-import-tax-rule";
 import type {
@@ -157,16 +158,9 @@ export function NfeContextReview({
 
   return (
     <>
-      <section className="surface-card mt-6 overflow-hidden">
-        <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
-          <div>
-            <p className="eyebrow">Etapa 3</p>
-            <h2 className="mt-2 text-2xl font-semibold">Conferir contexto fiscal</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Confirme desembaraço, transporte e fornecedor. A origem de cada dado permanece visível para auditoria.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
+      <section id="nfe-contexto" className="surface-card mt-6 scroll-mt-56 lg:scroll-mt-40">
+        <NfeSectionHeader step={3} title="Conferir contexto fiscal" summary="Desembaraço, transporte e fornecedor" actions={
+          <>
             <button type="button" className="button button-secondary" disabled={refreshing || isLoading} onClick={refreshOfficialSources}>
               {refreshing ? <LoaderCircle className="animate-spin" size={16} /> : <RefreshCw size={16} />}
               {refreshing ? "Consultando..." : "Atualizar dados da DUIMP"}
@@ -174,8 +168,8 @@ export function NfeContextReview({
             <button type="button" className="button button-primary" disabled={!data} onClick={() => setSheetOpen(true)}>
               <PencilLine size={16} /> Revisar dados
             </button>
-          </div>
-        </div>
+          </>
+        } />
 
         {error || actionError ? (
           <div className="p-8 text-center">
@@ -397,15 +391,10 @@ function NfeItemClassificationSection({
 
   return (
     <>
-      <section className="surface-card mt-6 overflow-hidden">
-        <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
-          <div>
-            <p className="eyebrow">Etapa 4</p>
-            <h2 className="mt-2 text-2xl font-semibold">Finalidades e regras tributárias</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Cada item é resolvido pela prioridade: NCM exato, maior prefixo, regra geral e prioridade configurada.</p>
-          </div>
+      <section id="nfe-finalidades" className="surface-card mt-6 scroll-mt-56 lg:scroll-mt-40">
+        <NfeSectionHeader step={4} title="Finalidades e regras tributárias" summary="Classificação por item e regra aplicável" actions={
           <button type="button" className="button button-primary" disabled={!data} onClick={() => setSheetOpen(true)}><SlidersHorizontal size={16} /> Classificar itens</button>
-        </div>
+        } />
 
         {error ? (
           <div className="p-8 text-center"><p className="text-sm text-destructive">{bffErrorMessage(error)}</p><button type="button" className="button button-secondary mt-4" onClick={() => mutate()}><RefreshCw size={16} /> Tentar novamente</button></div>

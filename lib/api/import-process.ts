@@ -409,6 +409,7 @@ export type NfeDraftSummary = {
   validation_errors: NfeValidationIssue[] | null;
   validation_warnings: NfeValidationIssue[] | null;
   latest_xml: NfeXmlSummary | null;
+  signed_xml?: Pick<NfeXmlSummary, "id" | "version_number" | "xml_type" | "xsd_valid" | "generated_at"> | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -598,9 +599,11 @@ export type NfeDocumentPlan = {
     drafts_count: number;
     xmls_count: number;
     xsd_valid_count: number;
+    signed_count: number;
     all_drafts_created: boolean;
     all_xmls_generated: boolean;
     all_xmls_valid: boolean;
+    all_signed: boolean;
   };
   documents: NfePlannedDocument[];
   created_by: { id: string; name: string } | null;
@@ -919,6 +922,35 @@ export async function downloadNfeDraftXml(
 ) {
   return apiClient.get<ArrayBuffer>(
     routes.backend.importProcess.draftXmlDownload(draftId, versionId),
+    { ...bearerConfig(accessToken), responseType: "arraybuffer" },
+  );
+}
+
+export async function signNfeDraftXml(
+  accessToken: string,
+  draftId: string,
+  versionId: string,
+  certificateId: string,
+) {
+  const response = await apiClient.post<{
+    xml_version: NfeXmlSummary;
+    replayed: boolean;
+    issuance: { status: string };
+  }>(
+    routes.backend.importProcess.draftXmlSign(draftId, versionId),
+    { certificate_id: certificateId },
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function downloadDanfePreview(
+  accessToken: string,
+  draftId: string,
+  versionId: string,
+) {
+  return apiClient.get<ArrayBuffer>(
+    routes.backend.importProcess.draftDanfePreview(draftId, versionId),
     { ...bearerConfig(accessToken), responseType: "arraybuffer" },
   );
 }
