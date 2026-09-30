@@ -10,6 +10,7 @@ import type {
   NfeContextState,
   NfeDocumentPlan,
   GenerateNfeChildDraftsResult,
+  GenerateNfeChildXmlsResult,
   NfeDraftDetail,
   NfeDraftValidation,
   NfeItemClassificationState,
@@ -193,3 +194,20 @@ export async function validateNfeDraft(draftId: string) {
 }
 
 export type { DuimpSnapshotDetails, NfeDraftDetail };
+
+export async function generateNfeChildXmls(id: string, snapshotId: string) {
+  const response = await bffClient.post<GenerateNfeChildXmlsResult>(
+    routes.bff.importProcess.documentPlanXmls(id),
+    { duimp_snapshot_id: snapshotId },
+  );
+  return response.data;
+}
+
+export function nfeChildXmlBundleUrl(id: string, snapshotId: string) {
+  const search = new URLSearchParams({ duimp_snapshot_id: snapshotId });
+  return `${routes.bff.importProcess.documentPlanXmls(id)}?${search}`;
+}
+
+export function nfeDraftXmlDownloadUrl(draftId: string, versionId: string) {
+  return routes.bff.importProcess.draftXmlDownload(draftId, versionId);
+}

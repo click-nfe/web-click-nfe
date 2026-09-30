@@ -35,6 +35,14 @@ export function importProcessApiErrorResponse(operation: string, error: unknown)
   ) {
     return NextResponse.json(error.response.data, { status: error.response.status });
   }
+  if (
+    hasApiStatus(error, 503) &&
+    axios.isAxiosError(error) &&
+    isObject(error.response?.data) &&
+    error.response?.data.error === "xsd_schema_unavailable"
+  ) {
+    return NextResponse.json(error.response.data, { status: 503 });
+  }
   if (hasApiStatus(error, 502, 503)) {
     return NextResponse.json(
       {
