@@ -424,6 +424,9 @@ export type NfeSefazStatus = {
   rejection_code?: string | null;
   rejection_reason?: string | null;
   last_error?: string | null;
+  last_response_code?: string | null;
+  last_response_message?: string | null;
+  next_action?: string | null;
   authorized_xml_version_id?: string | null;
   attempts?: Array<{ operation: string; status: string; response_code?: string | null; response_message?: string | null; started_at: string }>;
 };
