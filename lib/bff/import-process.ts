@@ -211,3 +211,15 @@ export function nfeChildXmlBundleUrl(id: string, snapshotId: string) {
 export function nfeDraftXmlDownloadUrl(draftId: string, versionId: string) {
   return routes.bff.importProcess.draftXmlDownload(draftId, versionId);
 }
+
+export async function signNfeDraftXml(draftId: string, versionId: string, certificateId: string) {
+  const response = await bffClient.post(
+    routes.bff.importProcess.draftXmlSign(draftId, versionId),
+    { certificate_id: certificateId },
+  );
+  return response.data;
+}
+
+export function danfePreviewUrl(draftId: string, versionId: string) {
+  return routes.bff.importProcess.draftDanfePreview(draftId, versionId);
+}

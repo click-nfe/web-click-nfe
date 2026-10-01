@@ -19,7 +19,8 @@ import {
 import { NfeContextReview } from "@/components/dashboard/nfe-context-review";
 import { DuimpCaptureDetails } from "@/components/dashboard/duimp-capture-details";
 import { NfeDocumentPlanPanel } from "@/components/dashboard/nfe-document-plan";
-import { NfeIssuanceStepper } from "@/components/dashboard/nfe-issuance-stepper";
+import { NfeRoadmap } from "@/components/dashboard/nfe-roadmap";
+import { NfeSectionHeader } from "@/components/dashboard/nfe-section-header";
 import { NfeNumberSequenceSheet } from "@/components/dashboard/nfe-number-sequence-sheet";
 import type { ClientRecord } from "@/lib/api/client-record";
 import type { ImportProcessRecord, NfeWorkflowState } from "@/lib/api/import-process";
@@ -121,22 +122,23 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
         <p className="text-sm text-muted-foreground">Atualizado em {formatProcessDate(process.updated_at)}</p>
       </header>
 
-      <div className="mt-8"><NfeIssuanceStepper steps={workflow.steps} /></div>
+      <NfeRoadmap />
+      <div id="nfe-process-content" className="lg:pr-56">
 
-      {!hasSnapshot && clientId ? (
-        <div className="mt-8">
-          <ClientIssuanceReadinessPanel clientId={clientId} readiness={readiness} onConfigureSequence={() => setSequenceSheetOpen(true)} />
-        </div>
-      ) : null}
+        <section id="nfe-cliente" className="surface-card mt-8 scroll-mt-56 lg:scroll-mt-40">
+          <NfeSectionHeader step={1} title="Cliente e configuração" summary={client?.nome_resumido || client?.razao_social || "Perfil fiscal do emitente"} />
+          {clientId && !hasSnapshot ? (
+            <ClientIssuanceReadinessPanel clientId={clientId} readiness={readiness} onConfigureSequence={() => setSequenceSheetOpen(true)} />
+          ) : (
+            <div className="p-5 text-sm text-muted-foreground sm:p-6">
+              {client ? `${client.nome_resumido || client.razao_social} · ${formatCnpj(client.cnpj)}` : "Carregando cliente..."}
+              <p className="mt-1">Configurações usadas na captura e na preparação da NF-e.</p>
+            </div>
+          )}
+        </section>
 
-      <section className="surface-card mt-6 overflow-hidden">
-        <div className="border-b border-border p-5 sm:p-6">
-          <p className="eyebrow">Etapa 2</p>
-          <h2 className="mt-2 text-2xl font-semibold">Capturar dados da DUIMP</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            A consulta usa as credenciais organizacionais do Portal Único e vincula o retorno a este processo.
-          </p>
-        </div>
+      <section id="nfe-duimp" data-unlocked={canFetch || hasSnapshot} className="surface-card mt-6 scroll-mt-56 lg:scroll-mt-40">
+        <NfeSectionHeader step={2} title="Capturar dados da DUIMP" summary={workflow.latest_snapshot?.duimp_number || "Portal Único — Produção"} />
 
         {hasSnapshot && workflow.latest_snapshot ? (
           <div className="p-6 sm:p-8">
@@ -194,14 +196,16 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
         />
       ) : null}
 
-      {workflow.latest_snapshot && workflow.prerequisites.item_classification_ready ? (
+      {workflow.latest_snapshot && workflow.prerequisites.item_classification_ready && clientId ? (
         <NfeDocumentPlanPanel
           processId={processId}
+          clientId={clientId}
           snapshotId={workflow.latest_snapshot.id}
           requiresRebuild={workflow.next_action === "create_document_plan" && workflow.prerequisites.has_document_plan}
           onWorkflowChange={() => workflowRequest.mutate()}
         />
       ) : null}
+      </div>
 
       {clientId ? (
         <NfeNumberSequenceSheet

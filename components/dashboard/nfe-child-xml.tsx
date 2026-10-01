@@ -2,6 +2,7 @@
 
 import { AlertTriangle, CheckCircle2, Download, FileCode2, LoaderCircle, ShieldAlert } from "lucide-react";
 import { useState } from "react";
+import { NfeSectionHeader } from "@/components/dashboard/nfe-section-header";
 
 import type { NfeChildXmlResult, NfeDocumentPlan, NfePlannedDocument } from "@/lib/api/import-process";
 import { bffErrorMessage } from "@/lib/bff/client";
@@ -18,10 +19,11 @@ function supplierName(document: NfePlannedDocument) {
     || `NF-e filha ${document.ordinal}`;
 }
 
-function xmlIsCurrent(document: NfePlannedDocument) {
+export function xmlIsCurrent(document: NfePlannedDocument) {
   const draft = document.draft;
   const xml = draft?.latest_xml;
   if (!draft || !xml) return false;
+  if (draft.signed_xml?.version_number === xml.version_number && draft.signed_xml.xsd_valid === true) return true;
   const editedAt = Date.parse(draft.updated_at ?? "");
   const generatedAt = Date.parse(xml.generated_at ?? "");
   return !Number.isFinite(editedAt) || (Number.isFinite(generatedAt) && editedAt <= generatedAt);
@@ -65,20 +67,13 @@ export function NfeChildXmlPanel({
   }
 
   return (
-    <section id="xmls-nfe" className="surface-card mt-6 scroll-mt-24 overflow-hidden">
-      <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
-        <div>
-          <p className="eyebrow">Etapa 7</p>
-          <h2 className="mt-2 text-2xl font-semibold">Chaves e XMLs das NF-e filhas</h2>
-          <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Reserve a numeração de cada filha apenas nesta etapa, gere a chave de acesso e valide o XML NF-e 4.00 não assinado pelo XSD.
-          </p>
-        </div>
+    <section id="xmls-nfe" data-unlocked={allDraftsReady} className="surface-card mt-6 scroll-mt-56 lg:scroll-mt-40">
+      <NfeSectionHeader step={7} title="Chaves e XMLs das NF-e filhas" summary={`${plan.progress.xsd_valid_count} XML(s) válidos no XSD`} actions={
         <button type="button" className="button button-primary" disabled={!allDraftsReady || generating} onClick={generate}>
           {generating ? <LoaderCircle className="animate-spin" size={16} /> : <FileCode2 size={16} />}
           {generating ? "Gerando e validando..." : allXmlsValid ? "Revalidar XMLs" : "Gerar e validar XMLs"}
         </button>
-      </div>
+      } />
 
       <div className="space-y-4 p-5 sm:p-7">
         {!allDraftsReady ? (

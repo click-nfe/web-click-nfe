@@ -16,7 +16,9 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 
 import { Sheet } from "@/components/ui/sheet";
+import { NfeSectionHeader } from "@/components/dashboard/nfe-section-header";
 import { NfeChildXmlPanel } from "@/components/dashboard/nfe-child-xml";
+import { NfeChildSignPanel } from "@/components/dashboard/nfe-child-sign";
 import type {
   NfeDocumentPlan,
   NfeDraftDetail,
@@ -74,6 +76,7 @@ const statusLabels: Record<string, string> = {
 
 export function NfeDraftReviewPanel({
   processId,
+  clientId,
   snapshotId,
   plan,
   onPlanChange,
@@ -81,6 +84,7 @@ export function NfeDraftReviewPanel({
   onWorkflowChange,
 }: {
   processId: string;
+  clientId: string;
   snapshotId: string;
   plan: NfeDocumentPlan;
   onPlanChange: (plan: NfeDocumentPlan) => Promise<unknown>;
@@ -130,22 +134,15 @@ export function NfeDraftReviewPanel({
 
   return (
     <>
-      <section id="rascunhos-nfe" className="surface-card mt-6 scroll-mt-24 overflow-hidden">
-        <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
-          <div>
-            <p className="eyebrow">Etapa 6</p>
-            <h2 className="mt-2 text-2xl font-semibold">Rascunhos das NF-e filhas</h2>
-            <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-              Gere um rascunho independente para cada exportador e confira os dados fiscais antes de reservar a numeração ou produzir XML.
-            </p>
-          </div>
-          {drafted.length < plan.documents.length ? (
+      <section id="rascunhos-nfe" className="surface-card mt-6 scroll-mt-56 lg:scroll-mt-40">
+        <NfeSectionHeader step={6} title="Rascunhos das NF-e filhas" summary={`${drafted.length} de ${plan.documents.length} rascunhos gerados`} actions={
+          drafted.length < plan.documents.length ? (
             <button type="button" className="button button-primary" disabled={generating} onClick={generate}>
               {generating ? <LoaderCircle className="animate-spin" size={16} /> : <Files size={16} />}
               {generating ? "Gerando..." : drafted.length ? "Gerar pendentes" : "Gerar rascunhos"}
             </button>
-          ) : null}
-        </div>
+          ) : null
+        } />
 
         {!drafted.length ? (
           <div className="p-6 sm:p-8">
@@ -195,6 +192,12 @@ export function NfeDraftReviewPanel({
         snapshotId={snapshotId}
         plan={plan}
         onPlanChange={onPlanChange}
+        onWorkflowChange={onWorkflowChange}
+      />
+      <NfeChildSignPanel
+        clientId={clientId}
+        plan={plan}
+        onPlanRefresh={onPlanRefresh}
         onWorkflowChange={onWorkflowChange}
       />
 
