@@ -12,6 +12,7 @@ const stages = [
   { id: "rascunhos-nfe", title: "Rascunhos" },
   { id: "xmls-nfe", title: "XML e XSD" },
   { id: "assinatura-nfe", title: "Assinatura e PDF" },
+  { id: "transmissao-nfe", title: "SEFAZ" },
 ] as const;
 
 export function NfeRoadmap() {

@@ -15,6 +15,7 @@ import type {
   NfeDraftValidation,
   NfeItemClassificationState,
   NfeWorkflowState,
+  NfeSefazStatus,
   ResolveNfeContextPayload,
   SaveNfeItemClassificationsPayload,
   UpdateImportProcessPayload,
@@ -222,4 +223,20 @@ export async function signNfeDraftXml(draftId: string, versionId: string, certif
 
 export function danfePreviewUrl(draftId: string, versionId: string) {
   return routes.bff.importProcess.draftDanfePreview(draftId, versionId);
+}
+
+export function nfeSefazUrl(draftId: string) {
+  return routes.bff.importProcess.draftSefaz(draftId);
+}
+
+export async function transmitNfe(draftId: string) {
+  return (await bffClient.post<NfeSefazStatus>(routes.bff.importProcess.draftSefazTransmit(draftId))).data;
+}
+
+export async function reconcileNfe(draftId: string) {
+  return (await bffClient.post<NfeSefazStatus>(routes.bff.importProcess.draftSefazReconcile(draftId))).data;
+}
+
+export function authorizedNfeUrl(draftId: string) {
+  return routes.bff.importProcess.draftAuthorizedXml(draftId);
 }

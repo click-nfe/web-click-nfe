@@ -19,6 +19,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { NfeSectionHeader } from "@/components/dashboard/nfe-section-header";
 import { NfeChildXmlPanel } from "@/components/dashboard/nfe-child-xml";
 import { NfeChildSignPanel } from "@/components/dashboard/nfe-child-sign";
+import { NfeChildSefazPanel } from "@/components/dashboard/nfe-child-sefaz";
 import type {
   NfeDocumentPlan,
   NfeDraftDetail,
@@ -199,6 +200,10 @@ export function NfeDraftReviewPanel({
         plan={plan}
         onPlanRefresh={onPlanRefresh}
         onWorkflowChange={onWorkflowChange}
+      />
+      <NfeChildSefazPanel
+        plan={plan}
+        onChange={async () => { await Promise.all([onPlanRefresh(), onWorkflowChange()]); }}
       />
 
       <DraftReviewSheet

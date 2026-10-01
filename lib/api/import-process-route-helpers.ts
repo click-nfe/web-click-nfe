@@ -39,7 +39,7 @@ export function importProcessApiErrorResponse(operation: string, error: unknown)
     hasApiStatus(error, 503) &&
     axios.isAxiosError(error) &&
     isObject(error.response?.data) &&
-    error.response?.data.error === "xsd_schema_unavailable"
+    ["xsd_schema_unavailable", "sefaz_outcome_unknown", "sefaz_query_failed"].includes(String(error.response?.data.error))
   ) {
     return NextResponse.json(error.response.data, { status: 503 });
   }
