@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Download, LoaderCircle, Radio, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 
 import { useDashboardSession } from "@/components/dashboard/dashboard-session-context";
@@ -16,16 +16,51 @@ function supplierName(document: NfePlannedDocument) {
 
 function SefazChild({ document, onChange }: { document: NfePlannedDocument; onChange: () => Promise<unknown> }) {
   const draft = document.draft;
+  const draftId = draft?.id;
   const { user } = useDashboardSession();
   const { data, error, mutate } = useSWR<NfeSefazStatus>(draft?.signed_xml ? nfeSefazUrl(draft.id) : null, bffFetcher, {
     revalidateOnFocus: true,
   });
   const [busy, setBusy] = useState(false);
+  const [autoBusy, setAutoBusy] = useState(false);
+  const [visibilityTick, setVisibilityTick] = useState(0);
+  const [checkCount, setCheckCount] = useState(0);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
   const [actionError, setActionError] = useState<string | null>(null);
   const isAdmin = user.role === "admin";
   const status = data?.status ?? "not_signed";
-  const canTransmit = isAdmin && data?.enabled && status === "signed" && !busy;
-  const canReconcile = isAdmin && data?.enabled && ["submission_pending", "submitted", "processing"].includes(status) && !busy;
+  const canTransmit = isAdmin && data?.enabled && status === "signed" && !busy && !autoBusy;
+  const pending = ["submission_pending", "submitted", "processing"].includes(status);
+  const canReconcile = isAdmin && data?.enabled && pending && !busy && !autoBusy;
+
+  useEffect(() => {
+    const onVisible = () => { if (window.document.visibilityState === "visible") setVisibilityTick((value) => value + 1); };
+    window.document.addEventListener("visibilitychange", onVisible);
+    return () => window.document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
+  useEffect(() => {
+    if (!draftId || !isAdmin || !data?.enabled || !pending || busy || autoBusy || checkCount >= 6) return;
+    const delays = [5000, 10000, 15000, 30000, 60000, 60000];
+    const timer = window.setTimeout(async () => {
+      if (window.document.visibilityState === "hidden") return;
+      setCheckCount((count) => count + 1);
+      setAutoBusy(true);
+      try {
+        const result = await reconcileNfe(draftId);
+        setActionError(null);
+        await mutate(result, false);
+        await onChangeRef.current();
+      } catch (cause) {
+        setActionError(bffErrorMessage(cause));
+        await mutate();
+      } finally {
+        setAutoBusy(false);
+      }
+    }, delays[checkCount]);
+    return () => window.clearTimeout(timer);
+  }, [draftId, isAdmin, data?.enabled, pending, busy, autoBusy, mutate, visibilityTick, checkCount]);
 
   async function run(action: "transmit" | "reconcile") {
     if (!draft) return;
@@ -58,11 +93,14 @@ function SefazChild({ document, onChange }: { document: NfePlannedDocument; onCh
           {draft && status === "authorized" && data?.authorized_xml_version_id ? <a className="button button-secondary" href={authorizedDanfeUrl(draft.id)}><Download size={16} /> DANFE autorizado</a> : null}
         </div>
       </div>
-      {busy ? <p className="mt-3 flex items-center gap-2 text-sm"><LoaderCircle className="animate-spin" size={16} /> Aguardando retorno...</p> : null}
-      {draft?.signed_xml && data?.enabled === false ? <p className="mt-3 text-sm text-amber-800 dark:text-amber-300">Transmissão de produção desabilitada na API. Configure os endpoints oficiais antes de emitir.</p> : null}
+      {busy || autoBusy ? <p className="mt-3 flex items-center gap-2 text-sm"><LoaderCircle className="animate-spin" size={16} /> {autoBusy ? "Consultando resultado na SEFAZ..." : "Aguardando retorno..."}</p> : null}
+      {pending && checkCount >= 6 && !autoBusy ? <p className="mt-3 text-sm text-amber-800 dark:text-amber-300">Acompanhamento automático pausado. Use Consultar resultado para verificar novamente.</p> : null}
+      {draft?.signed_xml && data?.enabled === false ? <p className="mt-3 text-sm text-amber-800 dark:text-amber-300">Transmissão de produção desabilitada na API. Confira o credenciamento, o certificado e os endpoints antes de habilitar a emissão.</p> : null}
       {data?.receipt_number ? <p className="mt-3 text-sm">Recibo: <span className="font-mono">{data.receipt_number}</span></p> : null}
       {data?.protocol_number ? <p className="mt-3 text-sm">Protocolo: <span className="font-mono">{data.protocol_number}</span></p> : null}
+      {data?.last_response_code && !data.rejection_code ? <p className="mt-3 text-sm">SEFAZ {data.last_response_code}: {data.last_response_message}</p> : null}
       {data?.rejection_code ? <p className="mt-3 text-sm text-destructive">Rejeição {data.rejection_code}: {data.rejection_reason}</p> : null}
+      {data?.next_action ? <p className="mt-3 rounded-xl border border-border bg-muted/30 p-3 text-sm" role="status">{data.next_action}</p> : null}
       {data?.last_error ? <p className="mt-3 text-sm text-amber-800 dark:text-amber-300">{data.last_error}</p> : null}
       {error || actionError ? <p className="mt-3 text-sm text-destructive" role="alert">{actionError || bffErrorMessage(error)}</p> : null}
       {data?.attempts?.length ? <details className="mt-4 text-xs text-muted-foreground"><summary className="cursor-pointer">Histórico de consultas e tentativas</summary><ul className="mt-2 space-y-1">{data.attempts.map((attempt, index) => <li key={`${attempt.started_at}-${index}`}>{new Date(attempt.started_at).toLocaleString("pt-BR")} · {attempt.operation} · {attempt.status} {attempt.response_code ? `· ${attempt.response_code} ${attempt.response_message || ""}` : ""}</li>)}</ul></details> : null}
@@ -75,9 +113,9 @@ export function NfeChildSefazPanel({ plan, onChange }: { plan: NfeDocumentPlan; 
     <section id="transmissao-nfe" data-unlocked={plan.progress.all_signed} className="surface-card mt-6 scroll-mt-56 lg:scroll-mt-40">
       <NfeSectionHeader step={9} title="Transmissão e autorização SEFAZ" summary="Uma NF-e real por filha, com protocolo individual" />
       <div className="space-y-4 p-5 sm:p-7">
-        <p className="flex items-start gap-2 rounded-2xl border border-amber-400/35 bg-amber-500/5 p-4 text-sm text-amber-800 dark:text-amber-300"><AlertTriangle size={18} className="shrink-0" />Esta etapa usa SEFAZ de produção. Cada transmissão pode autorizar uma NF-e real. Se o retorno for incerto, consulte a chave ou o recibo; o sistema bloqueia um segundo envio automático.</p>
+        <p className="flex items-start gap-2 rounded-2xl border border-amber-400/35 bg-amber-500/5 p-4 text-sm text-amber-800 dark:text-amber-300"><AlertTriangle size={18} className="shrink-0" />Esta etapa usa SEFAZ de produção. Cada transmissão pode autorizar uma NF-e real. O painel acompanha o recibo ou a chave automaticamente após o envio e mostra as orientações da SEFAZ. O sistema bloqueia um segundo envio automático.</p>
         {!plan.progress.all_signed ? <p className="text-sm text-muted-foreground">Assine todas as NF-e filhas na etapa 8 antes de iniciar a transmissão.</p> : null}
-        {plan.documents.map((document) => <SefazChild key={document.id} document={document} onChange={onChange} />)}
+        {plan.documents.map((document) => <SefazChild key={document.draft?.id || document.id} document={document} onChange={onChange} />)}
         <p className="text-xs text-muted-foreground">Após a autorização, baixe o XML com protocolo e o DANFE em PDF da NF-e filha. A prévia da etapa 8 continua identificada como sem valor fiscal.</p>
       </div>
     </section>
