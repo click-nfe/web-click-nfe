@@ -100,6 +100,7 @@ export const routes = {
       draftSefazTransmit: (id: string) => `/nfe-drafts/${resourceId(id)}/sefaz/transmit`,
       draftSefazReconcile: (id: string) => `/nfe-drafts/${resourceId(id)}/sefaz/reconcile`,
       draftAuthorizedXml: (id: string) => `/nfe-drafts/${resourceId(id)}/sefaz/authorized-xml`,
+      draftDanfe: (id: string) => `/nfe-drafts/${resourceId(id)}/sefaz/danfe`,
     },
   },
   bff: {
@@ -148,6 +149,7 @@ export const routes = {
       draftSefazTransmit: (id: string) => `/api/nfe-drafts/${resourceId(id)}/sefaz/transmit`,
       draftSefazReconcile: (id: string) => `/api/nfe-drafts/${resourceId(id)}/sefaz/reconcile`,
       draftAuthorizedXml: (id: string) => `/api/nfe-drafts/${resourceId(id)}/sefaz/authorized-xml`,
+      draftDanfe: (id: string) => `/api/nfe-drafts/${resourceId(id)}/sefaz/danfe`,
       documentPlanXmls: (id: string) =>
         `/api/import-processes/${resourceId(id)}/xmls`,
     },

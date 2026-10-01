@@ -240,3 +240,8 @@ export async function reconcileNfe(draftId: string) {
 export function authorizedNfeUrl(draftId: string) {
   return routes.bff.importProcess.draftAuthorizedXml(draftId);
 }
+
+
+export function authorizedDanfeUrl(draftId: string) {
+  return routes.bff.importProcess.draftDanfe(draftId);
+}

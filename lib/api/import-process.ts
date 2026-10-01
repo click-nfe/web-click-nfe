@@ -989,3 +989,10 @@ export async function downloadAuthorizedNfe(token: string, draftId: string) {
     ...bearerConfig(token), responseType: "arraybuffer",
   });
 }
+
+
+export async function downloadAuthorizedDanfe(token: string, draftId: string) {
+  return apiClient.get<ArrayBuffer>(routes.backend.importProcess.draftDanfe(draftId), {
+    ...bearerConfig(token), responseType: "arraybuffer",
+  });
+}

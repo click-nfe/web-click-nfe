@@ -8,7 +8,7 @@ import { useDashboardSession } from "@/components/dashboard/dashboard-session-co
 import { NfeSectionHeader } from "@/components/dashboard/nfe-section-header";
 import type { NfeDocumentPlan, NfePlannedDocument, NfeSefazStatus } from "@/lib/api/import-process";
 import { bffErrorMessage, bffFetcher } from "@/lib/bff/client";
-import { authorizedNfeUrl, nfeSefazUrl, reconcileNfe, transmitNfe } from "@/lib/bff/import-process";
+import { authorizedDanfeUrl, authorizedNfeUrl, nfeSefazUrl, reconcileNfe, transmitNfe } from "@/lib/bff/import-process";
 
 function supplierName(document: NfePlannedDocument) {
   return document.foreign_supplier?.name || document.foreign_supplier?.legal_name || document.exporter_code || `NF-e filha ${document.ordinal}`;
@@ -55,6 +55,7 @@ function SefazChild({ document, onChange }: { document: NfePlannedDocument; onCh
           {canTransmit ? <button type="button" className="button button-primary" onClick={() => void run("transmit")}><Radio size={16} /> Transmitir à SEFAZ</button> : null}
           {canReconcile ? <button type="button" className="button button-secondary" onClick={() => void run("reconcile")}><RefreshCw size={16} /> Consultar resultado</button> : null}
           {draft && status === "authorized" ? <a className="button button-secondary" href={authorizedNfeUrl(draft.id)}><Download size={16} /> XML autorizado</a> : null}
+          {draft && status === "authorized" && data?.authorized_xml_version_id ? <a className="button button-secondary" href={authorizedDanfeUrl(draft.id)}><Download size={16} /> DANFE autorizado</a> : null}
         </div>
       </div>
       {busy ? <p className="mt-3 flex items-center gap-2 text-sm"><LoaderCircle className="animate-spin" size={16} /> Aguardando retorno...</p> : null}
@@ -77,7 +78,7 @@ export function NfeChildSefazPanel({ plan, onChange }: { plan: NfeDocumentPlan; 
         <p className="flex items-start gap-2 rounded-2xl border border-amber-400/35 bg-amber-500/5 p-4 text-sm text-amber-800 dark:text-amber-300"><AlertTriangle size={18} className="shrink-0" />Esta etapa usa SEFAZ de produção. Cada transmissão pode autorizar uma NF-e real. Se o retorno for incerto, consulte a chave ou o recibo; o sistema bloqueia um segundo envio automático.</p>
         {!plan.progress.all_signed ? <p className="text-sm text-muted-foreground">Assine todas as NF-e filhas na etapa 8 antes de iniciar a transmissão.</p> : null}
         {plan.documents.map((document) => <SefazChild key={document.id} document={document} onChange={onChange} />)}
-        <p className="text-xs text-muted-foreground">O XML com protocolo fica disponível após a autorização. A prévia PDF da etapa 8 permanece sem valor fiscal; o DANFE definitivo requer layout fiscal próprio.</p>
+        <p className="text-xs text-muted-foreground">Após a autorização, baixe o XML com protocolo e o DANFE em PDF da NF-e filha. A prévia da etapa 8 continua identificada como sem valor fiscal.</p>
       </div>
     </section>
   );
