@@ -49,7 +49,7 @@ function SefazChild({ document, onChange }: { document: NfePlannedDocument; onCh
         <div>
           <p className="font-semibold">NF-e filha {document.ordinal} · {supplierName(document)}</p>
           <p className="mt-1 break-all text-xs text-muted-foreground">Chave: {draft?.access_key || "aguardando"}</p>
-          <p className="mt-2 text-sm">{!draft?.signed_xml ? "Aguardando assinatura" : !data ? "Consultando situação..." : status === "authorized" ? "Autorizada pela SEFAZ" : status === "rejected" ? "Rejeitada pela SEFAZ" : status === "signed" ? "Assinada, aguardando transmissão" : "Resultado pendente de consulta"}</p>
+          <p className="mt-2 text-sm">{!draft?.signed_xml ? "Aguardando assinatura" : !data ? "Consultando situação..." : status === "authorized" ? "Autorizada pela SEFAZ" : status === "rejected" ? "Rejeitada pela SEFAZ" : status === "denied" ? "Uso denegado pela SEFAZ" : status === "signed" ? "Assinada, aguardando transmissão" : "Resultado pendente de consulta"}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {canTransmit ? <button type="button" className="button button-primary" onClick={() => void run("transmit")}><Radio size={16} /> Transmitir à SEFAZ</button> : null}
