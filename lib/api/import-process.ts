@@ -414,6 +414,20 @@ export type NfeDraftSummary = {
   updated_at: string | null;
 };
 
+export type NfeSefazStatus = {
+  id?: string;
+  status: "not_signed" | "signed" | "submission_pending" | "submitted" | "processing" | "authorized" | "rejected" | "denied";
+  enabled: boolean;
+  access_key?: string | null;
+  receipt_number?: string | null;
+  protocol_number?: string | null;
+  rejection_code?: string | null;
+  rejection_reason?: string | null;
+  last_error?: string | null;
+  authorized_xml_version_id?: string | null;
+  attempts?: Array<{ operation: string; status: string; response_code?: string | null; response_message?: string | null; started_at: string }>;
+};
+
 export type NfeDraftRecord = NfeDraftSummary & {
   organization_id: string;
   import_process_id: string;
@@ -953,4 +967,25 @@ export async function downloadDanfePreview(
     routes.backend.importProcess.draftDanfePreview(draftId, versionId),
     { ...bearerConfig(accessToken), responseType: "arraybuffer" },
   );
+}
+
+export async function getNfeSefazStatus(token: string, draftId: string) {
+  const response = await apiClient.get<NfeSefazStatus>(routes.backend.importProcess.draftSefaz(draftId), bearerConfig(token));
+  return response.data;
+}
+
+export async function transmitNfe(token: string, draftId: string) {
+  const response = await apiClient.post<NfeSefazStatus>(routes.backend.importProcess.draftSefazTransmit(draftId), {}, bearerConfig(token));
+  return response.data;
+}
+
+export async function reconcileNfe(token: string, draftId: string) {
+  const response = await apiClient.post<NfeSefazStatus>(routes.backend.importProcess.draftSefazReconcile(draftId), {}, bearerConfig(token));
+  return response.data;
+}
+
+export async function downloadAuthorizedNfe(token: string, draftId: string) {
+  return apiClient.get<ArrayBuffer>(routes.backend.importProcess.draftAuthorizedXml(draftId), {
+    ...bearerConfig(token), responseType: "arraybuffer",
+  });
 }

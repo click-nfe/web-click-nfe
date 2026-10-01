@@ -96,6 +96,10 @@ export const routes = {
         `/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/sign`,
       draftDanfePreview: (id: string, versionId: string) =>
         `/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/danfe-preview`,
+      draftSefaz: (id: string) => `/nfe-drafts/${resourceId(id)}/sefaz`,
+      draftSefazTransmit: (id: string) => `/nfe-drafts/${resourceId(id)}/sefaz/transmit`,
+      draftSefazReconcile: (id: string) => `/nfe-drafts/${resourceId(id)}/sefaz/reconcile`,
+      draftAuthorizedXml: (id: string) => `/nfe-drafts/${resourceId(id)}/sefaz/authorized-xml`,
     },
   },
   bff: {
@@ -140,6 +144,10 @@ export const routes = {
         `/api/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/sign`,
       draftDanfePreview: (id: string, versionId: string) =>
         `/api/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/danfe-preview`,
+      draftSefaz: (id: string) => `/api/nfe-drafts/${resourceId(id)}/sefaz`,
+      draftSefazTransmit: (id: string) => `/api/nfe-drafts/${resourceId(id)}/sefaz/transmit`,
+      draftSefazReconcile: (id: string) => `/api/nfe-drafts/${resourceId(id)}/sefaz/reconcile`,
+      draftAuthorizedXml: (id: string) => `/api/nfe-drafts/${resourceId(id)}/sefaz/authorized-xml`,
       documentPlanXmls: (id: string) =>
         `/api/import-processes/${resourceId(id)}/xmls`,
     },
