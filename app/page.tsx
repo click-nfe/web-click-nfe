@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  Building2,
   Check,
   FileCheck2,
   Fingerprint,
@@ -13,6 +12,7 @@ import {
 import Link from "next/link";
 
 import { Brand } from "@/components/brand";
+import { LandingRoadmap } from "@/components/landing-roadmap";
 import { SiteHeader } from "@/components/site-header";
 
 const steps = [
@@ -71,46 +71,11 @@ export default function Home() {
                   Já tenho acesso
                 </Link>
               </div>
-              <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
-                <LockKeyhole size={14} className="text-sage-strong" />
-                Novas contas são liberadas após a configuração da organização.
-              </p>
             </div>
 
             <div className="relative mx-auto w-full max-w-lg lg:mx-0 lg:justify-self-end">
               <div className="absolute -inset-8 rounded-full bg-sage/20 blur-3xl" />
-              <div className="surface-card relative overflow-hidden p-5 sm:p-7">
-                <div className="flex items-center justify-between border-b border-border pb-5">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Processo de importação</p>
-                    <p className="mt-1.5 font-semibold">DUIMP 25BR0000000000</p>
-                  </div>
-                  <span className="rounded-full bg-sage-soft px-3 py-1.5 text-xs font-semibold text-sage-strong">Em conferência</span>
-                </div>
-
-                <div className="space-y-3 py-6">
-                  {[
-                    ["Dados da declaração", "Conferidos"],
-                    ["Itens e classificações", "Em revisão"],
-                    ["Minuta da NF-e", "Aguardando"],
-                  ].map(([label, status], index) => (
-                    <div key={label} className="flex items-center gap-4 rounded-xl border border-border bg-background/65 p-4">
-                      <span className={`grid size-8 shrink-0 place-items-center rounded-full ${index === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                        {index === 0 ? <Check size={15} strokeWidth={2.5} /> : index + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{label}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">{status}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-3 rounded-xl bg-sage-soft p-4 text-sm text-sage-strong">
-                  <ShieldCheck size={19} />
-                  Dados isolados para a sua organização
-                </div>
-              </div>
+              <LandingRoadmap />
             </div>
           </div>
         </section>
@@ -171,18 +136,18 @@ export default function Home() {
           <div className="grid gap-10 lg:grid-cols-[1fr_1.25fr] lg:items-end">
             <div>
               <p className="eyebrow">Segurança desde a base</p>
-              <h2 className="font-display mt-5 text-4xl leading-tight font-semibold tracking-[-0.04em] sm:text-5xl">Cada organização no seu próprio contexto.</h2>
+              <h2 className="font-display mt-5 text-4xl leading-tight font-semibold tracking-[-0.04em] sm:text-5xl">Segurança em cada etapa da emissão.</h2>
             </div>
-            <p className="max-w-2xl text-lg leading-8 text-muted-foreground lg:justify-self-end">O acesso é autenticado e os dados operacionais são vinculados à organização do usuário. A arquitetura nasce preparada para evoluir a gestão de credenciais e segredos sem misturar ambientes ou clientes.</p>
+            <p className="max-w-2xl text-lg leading-8 text-muted-foreground lg:justify-self-end">Do acesso à consulta do protocolo, cada ação fiscal tem uma proteção concreta. O certificado do emitente é guardado no servidor e o XML assinado é conferido antes da transmissão.</p>
           </div>
 
           <div className="mt-14 grid gap-4 md:grid-cols-3">
             {[
-              [Building2, "Isolamento por organização", "Consultas e operações usam o contexto da conta autenticada."],
-              [ShieldCheck, "Acesso controlado", "Novos usuários entram por convite e configuração da organização."],
-              [LockKeyhole, "Segredos fora da interface", "Credenciais sensíveis ficam na camada segura do servidor."],
+              [ShieldCheck, "Acesso com permissões", "Assinatura e transmissão exigem autenticação e autorização do usuário."],
+              [LockKeyhole, "Certificado protegido", "O certificado A1 e sua senha ficam no cofre do servidor para assinar e transmitir a nota."],
+              [FileCheck2, "XML e retorno rastreáveis", "O XML assinado é verificado antes do envio. Tentativas, recibo e protocolo ficam registrados."],
             ].map(([Icon, title, description]) => {
-              const IconComponent = Icon as typeof Building2;
+              const IconComponent = Icon as typeof ShieldCheck;
               return (
                 <article key={title as string} className="surface-card p-6">
                   <IconComponent className="text-sage-strong" size={22} />
