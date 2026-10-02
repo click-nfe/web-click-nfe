@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { LockKeyhole, ShieldCheck } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import Link from "next/link";
 
 import { Brand } from "@/components/brand";
 import { LoginForm } from "@/components/login-form";
+import { LoginStory } from "@/components/login-story";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata: Metadata = {
@@ -60,18 +61,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <aside className="relative hidden overflow-hidden bg-foreground p-12 text-background lg:flex lg:flex-col lg:justify-between dark:bg-card dark:text-card-foreground">
         <div className="absolute -right-20 -top-20 size-96 rounded-full bg-sage/25 blur-3xl" />
         <p className="relative text-xs font-semibold uppercase tracking-[0.18em] text-sage">Click NFe</p>
-        <blockquote className="relative max-w-2xl">
-          <p className="font-display text-5xl leading-[1.08] font-semibold tracking-[-0.045em]">“Clareza para conferir. Segurança para emitir.”</p>
-          <footer className="mt-8 flex items-center gap-3 text-sm opacity-70">
-            <ShieldCheck size={18} className="text-sage" />
-            Sessão protegida e contexto isolado por organização
-          </footer>
-        </blockquote>
-        <div className="relative flex gap-2">
-          <span className="h-1 w-14 rounded-full bg-sage" />
-          <span className="h-1 w-5 rounded-full bg-white/20" />
-          <span className="h-1 w-5 rounded-full bg-white/20" />
-        </div>
+        <LoginStory />
       </aside>
     </main>
   );
