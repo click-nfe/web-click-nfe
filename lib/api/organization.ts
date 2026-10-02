@@ -5,6 +5,9 @@ export type Organization = {
   id: string;
   nome: string;
   slug: string;
+  cnpj: string | null;
+  email: string | null;
+  telefone: string | null;
   ativo: boolean;
 };
 
@@ -44,6 +47,15 @@ export async function getCurrentOrganization(accessToken: string) {
   const response = await apiClient.get<{ organization: Organization }>(
     routes.backend.organization.me,
     bearerConfig(accessToken),
+  );
+  return response.data.organization;
+}
+
+export type OrganizationUpdate = Pick<Organization, "nome" | "cnpj" | "email" | "telefone">;
+
+export async function updateCurrentOrganization(accessToken: string, payload: OrganizationUpdate) {
+  const response = await apiClient.patch<{ organization: Organization }>(
+    routes.backend.organization.me, payload, bearerConfig(accessToken),
   );
   return response.data.organization;
 }

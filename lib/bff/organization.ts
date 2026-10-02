@@ -1,9 +1,16 @@
 import type {
+  Organization,
+  OrganizationUpdate,
   ConfigurePortalUnicoPayload,
   PortalUnicoSettings,
 } from "@/lib/api/organization";
 import { routes } from "@/lib/api/routes";
 import { bffClient } from "@/lib/bff/client";
+
+export async function updateOrganization(payload: OrganizationUpdate) {
+  const response = await bffClient.patch<Organization>(routes.bff.organization.me, payload);
+  return response.data;
+}
 
 export async function configurePortalUnico(
   payload: ConfigurePortalUnicoPayload,

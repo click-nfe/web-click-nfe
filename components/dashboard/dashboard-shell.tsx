@@ -25,21 +25,22 @@ type NavItem = {
   label: string;
   icon: LucideIcon;
   href?: string;
+  tag?: string;
 };
 
 const navItems: NavItem[] = [
   { label: "Visão geral", icon: LayoutDashboard, href: "/dashboard" },
-  { label: "Processos", icon: FileClock, href: "/dashboard/processos" },
-  { label: "Clientes", icon: UsersRound, href: "/dashboard/clientes" },
-  { label: "Configurações", icon: Settings2, href: "/dashboard/configuracoes" },
+  { label: "Processos", icon: FileClock, href: "/dashboard/processos", tag: "processos" },
+  { label: "Clientes", icon: UsersRound, href: "/dashboard/clientes", tag: "clientes" },
+  { label: "Configurações", icon: Settings2, href: "/dashboard/configuracoes", tag: "configuracoes" },
 ];
 
-function DashboardNav({ onNavigate }: { onNavigate?: () => void }) {
+function DashboardNav({ user, onNavigate }: { user: UserIdentity; onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
     <nav className="space-y-1" aria-label="Dashboard">
-      {navItems.map(({ label, icon: Icon, href }) => {
+      {navItems.filter((item) => user.role === "admin" || !item.tag || user.access_tags?.includes(item.tag)).map(({ label, icon: Icon, href }) => {
         const active = href
           ? href === "/dashboard"
             ? pathname === href
@@ -108,7 +109,7 @@ export function DashboardShell({
         </div>
 
         <div className="mt-7">
-          <DashboardNav />
+          <DashboardNav user={user} />
         </div>
 
         <div className="mt-auto border-t border-border pt-4">
@@ -151,7 +152,7 @@ export function DashboardShell({
 
         {mobileMenuOpen ? (
           <div className="fixed inset-x-0 top-20 z-20 border-b border-border bg-card p-5 shadow-xl lg:hidden">
-            <DashboardNav onNavigate={() => setMobileMenuOpen(false)} />
+            <DashboardNav user={user} onNavigate={() => setMobileMenuOpen(false)} />
             <div className="mt-5 border-t border-border pt-4">
               <p className="px-3 text-sm font-medium">{user.nome}</p>
               <p className="mb-2 px-3 text-xs text-muted-foreground">{organization.nome}</p>
