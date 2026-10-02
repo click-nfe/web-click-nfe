@@ -40,7 +40,7 @@ function DashboardNav({ user, onNavigate }: { user: UserIdentity; onNavigate?: (
 
   return (
     <nav className="space-y-1" aria-label="Dashboard">
-      {navItems.filter((item) => user.role === "admin" || !item.tag || user.access_tags?.includes(item.tag)).map(({ label, icon: Icon, href }) => {
+      {navItems.filter((item) => user.role === "admin" || !item.tag || user.access_tags?.includes(item.tag) || (item.tag === "processos" && user.access_tags?.includes("emissao"))).map(({ label, icon: Icon, href }) => {
         const active = href
           ? href === "/dashboard"
             ? pathname === href

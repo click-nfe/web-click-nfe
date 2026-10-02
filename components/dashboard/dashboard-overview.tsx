@@ -66,7 +66,7 @@ const metrics: Metric[] = [
 
 export function DashboardOverview() {
   const { user } = useDashboardSession();
-  const canSeeProcesses = user.role === "admin" || user.access_tags?.includes("processos");
+  const canSeeProcesses = user.role === "admin" || user.access_tags?.some((tag) => tag === "processos" || tag === "emissao");
   const summary = useSWR<ImportProcessDashboardSummary>(
     canSeeProcesses ? routes.bff.importProcess.dashboardSummary : null,
     bffFetcher,
@@ -141,7 +141,7 @@ export function DashboardOverview() {
         ) : recent.data?.items.length ? (
           <div className="divide-y divide-border">
             {recent.data.items.map((process) => (
-              <Link key={process.id} href={`/dashboard/processos/${encodeURIComponent(process.id)}/emissao`} aria-label={`Abrir processo ${process.reference_code}`} className="grid gap-3 px-6 py-5 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:grid-cols-[1fr_auto] sm:items-center sm:px-8">
+              <Link key={process.id} href={`/dashboard/processos/${encodeURIComponent(process.id)}`} aria-label={`Abrir processo ${process.reference_code}`} className="grid gap-3 px-6 py-5 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:grid-cols-[1fr_auto] sm:items-center sm:px-8">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate text-sm font-semibold">{process.reference_code}</p>
