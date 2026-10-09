@@ -14,6 +14,7 @@ export const routes = {
     health: "/health",
     auth: {
       login: "/auth/login",
+      register: "/auth/register",
       refresh: "/auth/refresh",
       logout: "/auth/logout",
       me: "/auth/me",
@@ -108,6 +109,7 @@ export const routes = {
     health: "/api/health",
     auth: {
       login: "/api/auth/login",
+      register: "/api/auth/register",
       refresh: "/api/auth/refresh",
       logout: "/api/auth/logout",
     },

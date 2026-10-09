@@ -18,7 +18,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link href="/login" className="button button-ghost hidden sm:inline-flex">Entrar</Link>
-          <Link href="/demonstracao" className="button button-primary">Solicitar demonstração</Link>
+          <Link href="/cadastro" className="button button-primary">Cadastre-se agora</Link>
         </div>
       </div>
     </header>

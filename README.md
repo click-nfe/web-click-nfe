@@ -24,13 +24,12 @@ A aplicação fica disponível em [http://localhost:3000](http://localhost:3000)
 | `API_URL` | URL interna da API, usada somente no servidor Next.js | `http://127.0.0.1:5000` |
 | `API_TIMEOUT_MS` | Limite das requisições do Next.js para o Flask | `10000` |
 | `REFRESH_TOKEN_MAX_AGE_SECONDS` | Duração do cookie de renovação | `604800` |
-| `NEXT_PUBLIC_DEMO_REQUEST_URL` | Destino do formulário comercial | envio desabilitado |
 
 ## Autenticação
 
 O navegador conversa com as rotas `/api/auth/*` do Next.js. Os tokens retornados pela API são armazenados em cookies `HttpOnly`, sem exposição ao JavaScript do cliente. A área `/dashboard` exige uma sessão válida e tenta renovar o token de acesso quando necessário.
 
-O cadastro público não é exposto no frontend. Novas organizações e usuários passam pelo fluxo controlado de demonstração e configuração.
+O formulário `/cadastro` cria uma organização e o primeiro administrador por `/api/auth/register`, que encaminha o pedido à API Flask. Depois do cadastro, o usuário entra em `/login`. A rota antiga `/demonstracao` redireciona para o novo formulário. Não configure `NEXT_PUBLIC_DEMO_REQUEST_URL`.
 
 ## Camada HTTP
 

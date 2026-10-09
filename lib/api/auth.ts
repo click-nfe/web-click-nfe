@@ -31,6 +31,19 @@ export async function login(email: string, password: string) {
   return response.data;
 }
 
+export type Registration = {
+  organization_name: string;
+  organization_slug: string;
+  name: string;
+  email: string;
+  password: string;
+};
+
+export async function registerOrganization(values: Registration) {
+  const response = await apiClient.post(routes.backend.auth.register, values);
+  return response.data;
+}
+
 export async function refreshSession(refreshToken: string) {
   const response = await apiClient.post<{ tokens: AuthTokens }>(
     routes.backend.auth.refresh,
