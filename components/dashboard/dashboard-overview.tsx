@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import useSWR from "swr";
+import { useDashboardSession } from "@/components/dashboard/dashboard-session-context";
 
 import type {
   ImportProcessDashboardSummary,
@@ -64,12 +65,14 @@ const metrics: Metric[] = [
 ];
 
 export function DashboardOverview() {
+  const { user } = useDashboardSession();
+  const canSeeProcesses = user.role === "admin" || user.access_tags?.some((tag) => tag === "processos" || tag === "emissao");
   const summary = useSWR<ImportProcessDashboardSummary>(
-    routes.bff.importProcess.dashboardSummary,
+    canSeeProcesses ? routes.bff.importProcess.dashboardSummary : null,
     bffFetcher,
   );
   const recent = useSWR<ImportProcessListResponse>(
-    importProcessListUrl({ limit: 5, offset: 0 }),
+    canSeeProcesses ? importProcessListUrl({ limit: 5, offset: 0 }) : null,
     bffFetcher,
   );
 
@@ -81,10 +84,14 @@ export function DashboardOverview() {
           <h1 className="font-display mt-3 text-4xl font-semibold tracking-[-0.04em]">Operação fiscal</h1>
           <p className="mt-2 text-muted-foreground">Acompanhe os processos da sua organização em um só lugar.</p>
         </div>
-        <Link href="/dashboard/processos" className="button button-primary min-h-11">
+        {canSeeProcesses && <Link href="/dashboard/processos" className="button button-primary min-h-11">
           Ver processos <ArrowRight size={17} />
-        </Link>
+        </Link>}
       </div>
+
+      {!canSeeProcesses && <p className="surface-card mt-8 p-6 text-sm text-muted-foreground">Seu usuário não possui a tag Processos. Use o menu para acessar os módulos liberados.</p>}
+
+      {canSeeProcesses && <>
 
       {summary.error ? (
         <div className="mt-8 flex flex-col gap-3 rounded-2xl border border-destructive/25 bg-destructive/5 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -134,7 +141,7 @@ export function DashboardOverview() {
         ) : recent.data?.items.length ? (
           <div className="divide-y divide-border">
             {recent.data.items.map((process) => (
-              <article key={process.id} className="grid gap-3 px-6 py-5 sm:grid-cols-[1fr_auto] sm:items-center sm:px-8">
+              <Link key={process.id} href={`/dashboard/processos/${encodeURIComponent(process.id)}`} aria-label={`Abrir processo ${process.reference_code}`} className="grid gap-3 px-6 py-5 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:grid-cols-[1fr_auto] sm:items-center sm:px-8">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate text-sm font-semibold">{process.reference_code}</p>
@@ -144,8 +151,8 @@ export function DashboardOverview() {
                   </div>
                   <p className="mt-1 truncate text-sm text-muted-foreground">{process.importer.name} · {nextActionLabels[process.next_action] ?? process.next_action}</p>
                 </div>
-                <time className="text-xs text-muted-foreground" dateTime={process.updated_at}>{formatProcessDate(process.updated_at)}</time>
-              </article>
+                <span className="flex items-center gap-3 text-xs text-muted-foreground"><time dateTime={process.updated_at}>{formatProcessDate(process.updated_at)}</time><ArrowRight size={16} aria-hidden="true" /></span>
+              </Link>
             ))}
           </div>
         ) : (
@@ -156,6 +163,7 @@ export function DashboardOverview() {
           </div>
         )}
       </section>
+      </>}
     </>
   );
 }

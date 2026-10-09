@@ -11,6 +11,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { FormEvent, useState } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import useSWR from "swr";
 
 import { useDashboardSession } from "@/components/dashboard/dashboard-session-context";
@@ -144,9 +146,10 @@ export function OrganizationSettings() {
   return (
     <>
       <div>
+        <Link href="/dashboard/configuracoes" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft size={16} /> Configurações</Link>
         <p className="eyebrow">Organização</p>
         <h1 className="font-display mt-3 text-4xl font-semibold tracking-[-0.04em]">
-          Configurações
+          Portal Único
         </h1>
         <p className="mt-2 max-w-3xl text-muted-foreground">
           Gerencie as conexões usadas por {organization.nome} para consultar dados

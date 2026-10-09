@@ -9,6 +9,7 @@ export type UserIdentity = {
   setor: string | null;
   tipo: "user";
   organizationId: string;
+  access_tags: string[];
 };
 
 export type AuthTokens = {
