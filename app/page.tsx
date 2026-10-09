@@ -64,8 +64,8 @@ export default function Home() {
                 O Click NFe organiza sua operação de importação, apoia a conferência fiscal e prepara a emissão com um fluxo simples, seguro e rastreável.
               </p>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-                <Link href="/demonstracao" className="button button-primary min-h-12 px-6">
-                  Solicitar demonstração <ArrowRight size={17} />
+                <Link href="/cadastro" className="button button-primary min-h-12 px-6">
+                  Cadastre-se agora <ArrowRight size={17} />
                 </Link>
                 <Link href="/login" className="button button-secondary min-h-12 px-6">
                   Já tenho acesso
@@ -164,12 +164,12 @@ export default function Home() {
             <div className="absolute -right-16 -top-28 size-72 rounded-full bg-sage/30 blur-3xl" />
             <div className="relative flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sage">Acesso inicial acompanhado</p>
-                <h2 className="font-display mt-5 text-4xl leading-tight font-semibold tracking-[-0.04em] sm:text-5xl">Vamos entender sua operação?</h2>
-                <p className="mt-5 max-w-2xl leading-7 opacity-70">Solicite uma demonstração para conhecermos o seu fluxo e prepararmos o acesso da organização.</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sage">Comece agora</p>
+                <h2 className="font-display mt-5 text-4xl leading-tight font-semibold tracking-[-0.04em] sm:text-5xl">Pronto para organizar sua operação?</h2>
+                <p className="mt-5 max-w-2xl leading-7 opacity-70">Cadastre sua organização, crie o primeiro acesso e comece a preparar seus processos.</p>
               </div>
-              <Link href="/demonstracao" className="button min-h-12 shrink-0 bg-sage px-6 text-slate-950 hover:-translate-y-0.5 hover:bg-sage/90">
-                Solicitar demonstração <ArrowRight size={17} />
+              <Link href="/cadastro" className="button min-h-12 shrink-0 bg-sage px-6 text-slate-950 hover:-translate-y-0.5 hover:bg-sage/90">
+                Cadastre-se agora <ArrowRight size={17} />
               </Link>
             </div>
           </div>

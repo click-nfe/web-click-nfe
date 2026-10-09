@@ -24,7 +24,9 @@ function safeNextPath(value: string | string[] | undefined) {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const nextPath = safeNextPath(params.next);
-  const sessionMessage = params.expired
+  const sessionMessage = params.registered
+    ? "Cadastro concluído. Entre com o e-mail e a senha que você criou."
+    : params.expired
     ? "Sua sessão expirou. Entre novamente para continuar."
     : params.unavailable
       ? "A API está temporariamente indisponível. Tente novamente."
@@ -41,7 +43,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-16">
           <p className="eyebrow"><LockKeyhole size={14} /> Acesso seguro</p>
           <h1 className="font-display mt-5 text-4xl font-semibold tracking-[-0.045em] sm:text-5xl">Bem-vindo de volta.</h1>
-          <p className="mt-4 leading-7 text-muted-foreground">Entre com o usuário configurado para a sua organização.</p>
+          <p className="mt-4 leading-7 text-muted-foreground">Entre com seu e-mail e senha para acessar sua organização.</p>
 
           {sessionMessage && (
             <p className="mt-6 rounded-xl border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">{sessionMessage}</p>
@@ -51,7 +53,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
           <p className="mt-8 text-center text-sm text-muted-foreground">
             Ainda não possui acesso?{" "}
-            <Link href="/demonstracao" className="font-semibold text-sage-strong hover:underline">Solicite uma demonstração</Link>
+            <Link href="/cadastro" className="font-semibold text-sage-strong hover:underline">Cadastre-se agora</Link>
           </p>
         </div>
 
