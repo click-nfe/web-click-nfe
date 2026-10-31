@@ -17,6 +17,7 @@ import {
   useClientIssuanceReadiness,
 } from "@/components/dashboard/client-issuance-readiness";
 import { NfeContextReview } from "@/components/dashboard/nfe-context-review";
+import { PortalUnicoAvailabilityNotice, usePortalUnicoAvailability } from "@/components/dashboard/portal-unico-availability";
 import { DuimpCaptureDetails } from "@/components/dashboard/duimp-capture-details";
 import { NfeDocumentPlanPanel } from "@/components/dashboard/nfe-document-plan";
 import { NfeRoadmap } from "@/components/dashboard/nfe-roadmap";
@@ -51,6 +52,8 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
   const clientId = processRequest.data?.importer_id;
   const clientRequest = useSWR<ClientRecord>(clientId ? routes.bff.client.detail(clientId) : null, bffFetcher);
   const readiness = useClientIssuanceReadiness(clientId);
+  const { data: portalAvailability } = usePortalUnicoAvailability();
+  const portalUnavailable = portalAvailability?.state === "unavailable";
   const [sequenceSheetOpen, setSequenceSheetOpen] = useState(false);
   const [duimpNumber, setDuimpNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -60,7 +63,8 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
   const process = processRequest.data;
   const client = clientRequest.data;
   const hasSnapshot = Boolean(workflow?.latest_snapshot);
-  const canFetch = readiness.hasFiscalProfile && Boolean(readiness.activeSequence) && readiness.hasPortalConnection && !readiness.hasError;
+  const prerequisitesReady = readiness.hasFiscalProfile && Boolean(readiness.activeSequence) && readiness.hasPortalConnection && !readiness.hasError;
+  const canFetch = prerequisitesReady && !portalUnavailable;
   const currentDuimpNumber = duimpNumber || process?.duimp_number || "";
 
   async function submitDuimp(event: FormEvent<HTMLFormElement>) {
@@ -158,6 +162,7 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
           </div>
         ) : (
           <form onSubmit={submitDuimp} className="p-6 sm:p-8">
+            {portalUnavailable ? <div className="mb-5"><PortalUnicoAvailabilityNotice /></div> : null}
             <label className="block max-w-xl">
               <span className="field-label">Número da DUIMP *</span>
               <input
@@ -171,7 +176,7 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
               <span className="mt-1.5 block text-xs text-muted-foreground">Aceitamos o número com ou sem hífen.</span>
             </label>
 
-            {!canFetch ? (
+            {!prerequisitesReady ? (
               <div className="mt-5 flex max-w-2xl items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4 text-sm text-amber-800 dark:text-amber-300">
                 <AlertTriangle className="mt-0.5 shrink-0" size={18} />
                 Conclua perfil fiscal, sequência NF-e e conexão com o Portal Único. Regras tributárias e certificado serão cobrados somente nas etapas em que forem necessários.

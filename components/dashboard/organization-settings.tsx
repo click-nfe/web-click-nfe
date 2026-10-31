@@ -16,6 +16,7 @@ import { ArrowLeft } from "lucide-react";
 import useSWR from "swr";
 
 import { useDashboardSession } from "@/components/dashboard/dashboard-session-context";
+import { PortalUnicoAvailabilityNotice, usePortalUnicoAvailability } from "@/components/dashboard/portal-unico-availability";
 import { Sheet } from "@/components/ui/sheet";
 import type { PortalUnicoSettings } from "@/lib/api/organization";
 import { routes } from "@/lib/api/routes";
@@ -61,7 +62,7 @@ function formatDate(value: string | null) {
 function storageLabel(value: string | null) {
   if (!value) return "Será definido ao configurar";
   if (value === "local_encrypted_file") return "Cofre local criptografado";
-  if (value === "google_secret_manager") return "Google Secret Manager";
+  if (value === "google_secret_manager" || value === "gcp_secret_manager") return "Google Secret Manager";
   return value;
 }
 
@@ -81,7 +82,11 @@ export function OrganizationSettings() {
     bffFetcher,
   );
 
-  const state = data ? statePresentation[data.state] : null;
+  const { data: availability } = usePortalUnicoAvailability();
+  const portalUnavailable = availability?.state === "unavailable";
+  const state = data?.last_error_code === "service_unavailable"
+    ? { label: "Serviço indisponível", className: statePresentation.error.className }
+    : data ? statePresentation[data.state] : null;
 
   function resetCredentials() {
     setClientId("");
@@ -128,12 +133,11 @@ export function OrganizationSettings() {
         message: "Conexão validada. A organização está pronta para consultar DUIMPs.",
       });
     } catch (testError) {
-      if (
-        axios.isAxiosError<PortalUnicoSettings>(testError) &&
-        testError.response?.status === 422 &&
-        testError.response.data?.state === "error"
-      ) {
-        await mutate(testError.response.data, { revalidate: false });
+      const response = axios.isAxiosError<PortalUnicoSettings>(testError)
+        ? testError.response
+        : undefined;
+      if (response && [422, 503].includes(response.status) && response.data?.state === "error") {
+        await mutate(response.data, { revalidate: false });
       } else {
         await mutate();
       }
@@ -175,6 +179,8 @@ export function OrganizationSettings() {
         </div>
       ) : null}
 
+      <div className="mt-6"><PortalUnicoAvailabilityNotice /></div>
+
       <section className="surface-card mt-8 overflow-hidden">
         <div className="flex flex-col gap-5 border-b border-border p-5 sm:flex-row sm:items-start sm:justify-between sm:p-7">
           <div className="flex items-start gap-4">
@@ -201,9 +207,9 @@ export function OrganizationSettings() {
             <button
               type="button"
               className="button button-secondary"
-              disabled={!canManage || !data?.configured || testing}
+              disabled={!canManage || !data?.configured || testing || portalUnavailable}
               onClick={testConnection}
-              title={!canManage ? "Apenas administradores podem testar a integração." : undefined}
+              title={!canManage ? "Apenas administradores podem testar a integração." : portalUnavailable ? "Serviço Indisponível: consulte o Portal Único antes de testar." : undefined}
             >
               {testing ? <LoaderCircle className="animate-spin" size={16} /> : <RefreshCw size={16} />}
               {testing ? "Testando..." : "Testar conexão"}
@@ -261,7 +267,7 @@ export function OrganizationSettings() {
                 <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Armazenamento protegido</dt>
                 <dd className="mt-2 text-sm font-medium">{storageLabel(data.credential_storage_provider)}</dd>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  O contrato já permite trocar o cofre local pelo Google Secret Manager sem alterar esta tela.
+                  As credenciais são armazenadas no cofre configurado para a organização.
                 </p>
               </div>
               <div className="sm:col-span-2">

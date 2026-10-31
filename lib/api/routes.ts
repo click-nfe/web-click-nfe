@@ -23,6 +23,7 @@ export const routes = {
       me: "/organizations/me",
       portalUnico: "/organizations/me/integrations/portal-unico",
       portalUnicoTest: "/organizations/me/integrations/portal-unico/test",
+      portalUnicoAvailability: "/organizations/me/integrations/portal-unico/availability",
     },
     users: { list: "/users", detail: (id: string) => `/users/user/${resourceId(id)}` },
     client: {
@@ -117,6 +118,7 @@ export const routes = {
       me: "/api/organization",
       portalUnico: "/api/organization/integrations/portal-unico",
       portalUnicoTest: "/api/organization/integrations/portal-unico/test",
+      portalUnicoAvailability: "/api/organization/integrations/portal-unico/availability",
     },
     users: { list: "/api/users", detail: (id: string) => `/api/users/${resourceId(id)}` },
     importProcess: {
