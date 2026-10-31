@@ -35,7 +35,14 @@ export type PortalUnicoSettings = {
   credential_storage_provider: string | null;
   last_healthcheck_at: string | null;
   last_error: string | null;
+  last_error_code: string | null;
   blockers: PortalUnicoBlocker[];
+};
+
+export type PortalUnicoAvailability = {
+  state: "available" | "unavailable" | "unknown";
+  message: string;
+  checked_at: string;
 };
 
 export type ConfigurePortalUnicoPayload = {
@@ -84,6 +91,14 @@ export async function testPortalUnicoConnection(accessToken: string) {
   const response = await apiClient.post<PortalUnicoSettings>(
     routes.backend.organization.portalUnicoTest,
     undefined,
+    bearerConfig(accessToken),
+  );
+  return response.data;
+}
+
+export async function getPortalUnicoAvailability(accessToken: string) {
+  const response = await apiClient.get<PortalUnicoAvailability>(
+    routes.backend.organization.portalUnicoAvailability,
     bearerConfig(accessToken),
   );
   return response.data;
