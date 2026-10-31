@@ -16,6 +16,7 @@ import { useState, type ReactNode } from "react";
 
 import { Brand } from "@/components/brand";
 import { DashboardSessionProvider } from "@/components/dashboard/dashboard-session-context";
+import { PortalUnicoAvailabilityBadge } from "@/components/dashboard/portal-unico-availability";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { UserIdentity } from "@/lib/api/auth";
@@ -140,6 +141,7 @@ export function DashboardShell({
             <p className="text-sm font-semibold">{organization.nome}</p>
           </div>
           <div className="flex items-center gap-2">
+            <PortalUnicoAvailabilityBadge />
             <ThemeToggle />
             <div
               className="grid size-10 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
