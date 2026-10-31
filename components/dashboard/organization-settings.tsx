@@ -133,12 +133,11 @@ export function OrganizationSettings() {
         message: "Conexão validada. A organização está pronta para consultar DUIMPs.",
       });
     } catch (testError) {
-      if (
-        axios.isAxiosError<PortalUnicoSettings>(testError) &&
-        [422, 503].includes(testError.response?.status ?? 0) &&
-        testError.response.data?.state === "error"
-      ) {
-        await mutate(testError.response.data, { revalidate: false });
+      const response = axios.isAxiosError<PortalUnicoSettings>(testError)
+        ? testError.response
+        : undefined;
+      if (response && [422, 503].includes(response.status) && response.data?.state === "error") {
+        await mutate(response.data, { revalidate: false });
       } else {
         await mutate();
       }
