@@ -324,7 +324,7 @@ function DraftDetails({ detail }: { detail: NfeDraftDetail }) {
       {errors.length || warnings.length ? <IssueList errors={errors} warnings={warnings} /> : null}
 
       <ReviewSection title="Documento">
-        <InfoGrid fields={[["Natureza da operação", document.operation_nature], ["Modelo", document.model ?? detail.draft.model], ["Série", document.series ?? detail.draft.series], ["Ambiente", "Produção"], ["Presença", document.presence_indicator], ["Intermediador", document.intermediary_indicator]]} />
+        <InfoGrid fields={[["Natureza da operação", document.operation_nature], ["Modelo", document.model ?? detail.draft.model], ["Série", document.series ?? detail.draft.series], ["Presença", document.presence_indicator], ["Intermediador", document.intermediary_indicator]]} />
       </ReviewSection>
 
       <ReviewSection title="Emitente e fornecedor estrangeiro">

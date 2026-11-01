@@ -27,7 +27,7 @@ export function NfeNumberSequenceSheet({
       open={open}
       onOpenChange={onOpenChange}
       title="Sequência de numeração NF-e"
-      description="Defina a série e o intervalo usado para reservar os próximos números do modelo 55 em produção."
+      description="Defina a série e o intervalo usado para reservar os próximos números da NF-e modelo 55."
     >
       {open ? (
         <NfeNumberSequenceForm
@@ -111,10 +111,6 @@ function NfeNumberSequenceForm({
         ) : null}
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <label>
-            <span className="field-label">Ambiente</span>
-            <input className="field-input" value="Produção" disabled />
-          </label>
           <label>
             <span className="field-label">Modelo</span>
             <input className="field-input" value="55 — NF-e" disabled />

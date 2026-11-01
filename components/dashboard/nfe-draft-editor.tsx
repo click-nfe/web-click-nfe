@@ -450,7 +450,7 @@ export function NfeDraftEditor({ processId, draftId }: { processId: string; draf
           <div>
             <p className="eyebrow">Configuração da NF-e filha</p>
             <h1 className="font-display mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Revisar rascunho</h1>
-            <p className="mt-2 text-sm text-muted-foreground">DUIMP {text(duimp.number) || "não informada"} · Série {request.data.draft.series} · Ambiente de produção</p>
+            <p className="mt-2 text-sm text-muted-foreground">DUIMP {text(duimp.number) || "não informada"} · Série {request.data.draft.series}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill errors={request.data.draft.validation_errors?.length ?? 0} warnings={request.data.draft.validation_warnings?.length ?? 0} />
