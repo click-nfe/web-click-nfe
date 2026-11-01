@@ -160,7 +160,7 @@ export function ClientIssuanceReadinessPanel({
           ready={Boolean(readiness.activeCertificate)}
           warning={!readiness.activeCertificate}
           title="Certificado eCNPJ A1"
-          detail={readiness.activeCertificate ? "Certificado de produção ativo para a futura assinatura." : "Será exigido na assinatura do XML, em uma etapa posterior."}
+          detail={readiness.activeCertificate ? "Certificado ativo para a futura assinatura." : "Será exigido na assinatura do XML, em uma etapa posterior."}
           action={<ProfileLink clientId={clientId} section="certificates">Configurar</ProfileLink>}
         />
       </ul>
