@@ -129,7 +129,7 @@ export function ImportProcessList() {
           </label>
         </div>
 
-        {error ? (
+        {error && !data ? (
           <div className="p-10 text-center">
             <p className="text-sm text-destructive">{bffErrorMessage(error)}</p>
             <button type="button" className="button button-secondary mt-4" onClick={() => mutate()}>
