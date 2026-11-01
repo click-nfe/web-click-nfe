@@ -134,13 +134,13 @@ export function ClientIssuanceReadinessPanel({
         <ReadinessRow
           ready={readiness.hasFiscalProfile}
           title="Perfil fiscal"
-          detail={readiness.hasFiscalProfile ? "Dados fiscais prontos para consultar a DUIMP." : "Obrigatório antes da consulta da DUIMP."}
+          detail={readiness.hasFiscalProfile ? "Dados fiscais prontos para preparar a nota." : "Necessário ao preparar a NF-e, após consultar a DUIMP."}
           action={<ProfileLink clientId={clientId} section="fiscal-profile">{readiness.hasFiscalProfile ? "Revisar" : "Configurar"}</ProfileLink>}
         />
         <ReadinessRow
           ready={Boolean(readiness.activeSequence)}
           title="Sequência NF-e"
-          detail={readiness.activeSequence ? `Série ${readiness.activeSequence.series}; próximo número após ${readiness.activeSequence.current_number}.` : "Obrigatória antes da consulta da DUIMP."}
+          detail={readiness.activeSequence ? `Série ${readiness.activeSequence.series}; próximo número após ${readiness.activeSequence.current_number}.` : "Necessária ao preparar a NF-e, após consultar a DUIMP."}
           action={<button type="button" className="button button-secondary min-h-9 px-3 text-xs" onClick={onConfigureSequence}>{readiness.activeSequence ? "Revisar" : "Configurar"}</button>}
         />
         <ReadinessRow
