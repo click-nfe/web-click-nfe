@@ -142,7 +142,7 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
         </section>
 
       <section id="nfe-duimp" data-unlocked={canFetch || hasSnapshot} className="surface-card mt-6 scroll-mt-56 lg:scroll-mt-40">
-        <NfeSectionHeader step={2} title="Capturar dados da DUIMP" summary={workflow.latest_snapshot?.duimp_number || "Portal Único — Produção"} />
+        <NfeSectionHeader step={2} title="Capturar dados da DUIMP" summary={workflow.latest_snapshot?.duimp_number || "Portal Único"} />
 
         {hasSnapshot && workflow.latest_snapshot ? (
           <div className="p-6 sm:p-8">
