@@ -95,7 +95,7 @@ function SefazChild({ document, onChange }: { document: NfePlannedDocument; onCh
       </div>
       {busy || autoBusy ? <p className="mt-3 flex items-center gap-2 text-sm"><LoaderCircle className="animate-spin" size={16} /> {autoBusy ? "Consultando resultado na SEFAZ..." : "Aguardando retorno..."}</p> : null}
       {pending && checkCount >= 6 && !autoBusy ? <p className="mt-3 text-sm text-amber-800 dark:text-amber-300">Acompanhamento automático pausado. Use Consultar resultado para verificar novamente.</p> : null}
-      {draft?.signed_xml && data?.enabled === false ? <p className="mt-3 text-sm text-amber-800 dark:text-amber-300">Transmissão de produção desabilitada na API. Confira o credenciamento, o certificado e os endpoints antes de habilitar a emissão.</p> : null}
+      {draft?.signed_xml && data?.enabled === false ? <p className="mt-3 text-sm text-amber-800 dark:text-amber-300">Transmissão desabilitada na API. Confira o credenciamento, o certificado e os endpoints antes de habilitar a emissão.</p> : null}
       {data?.receipt_number ? <p className="mt-3 text-sm">Recibo: <span className="font-mono">{data.receipt_number}</span></p> : null}
       {data?.protocol_number ? <p className="mt-3 text-sm">Protocolo: <span className="font-mono">{data.protocol_number}</span></p> : null}
       {data?.last_response_code && !data.rejection_code ? <p className="mt-3 text-sm">SEFAZ {data.last_response_code}: {data.last_response_message}</p> : null}
@@ -113,7 +113,7 @@ export function NfeChildSefazPanel({ plan, onChange }: { plan: NfeDocumentPlan; 
     <section id="transmissao-nfe" data-unlocked={plan.progress.all_signed} className="surface-card mt-6 scroll-mt-56 lg:scroll-mt-40">
       <NfeSectionHeader step={9} title="Transmissão e autorização SEFAZ" summary="Uma NF-e real por filha, com protocolo individual" />
       <div className="space-y-4 p-5 sm:p-7">
-        <p className="flex items-start gap-2 rounded-2xl border border-amber-400/35 bg-amber-500/5 p-4 text-sm text-amber-800 dark:text-amber-300"><AlertTriangle size={18} className="shrink-0" />Esta etapa usa SEFAZ de produção. Cada transmissão pode autorizar uma NF-e real. O painel acompanha o recibo ou a chave automaticamente após o envio e mostra as orientações da SEFAZ. O sistema bloqueia um segundo envio automático.</p>
+        <p className="flex items-start gap-2 rounded-2xl border border-amber-400/35 bg-amber-500/5 p-4 text-sm text-amber-800 dark:text-amber-300"><AlertTriangle size={18} className="shrink-0" />Cada transmissão pode autorizar uma NF-e real. O painel acompanha o recibo ou a chave automaticamente após o envio e mostra as orientações da SEFAZ. O sistema bloqueia um segundo envio automático.</p>
         {!plan.progress.all_signed ? <p className="text-sm text-muted-foreground">Assine todas as NF-e filhas na etapa 8 antes de iniciar a transmissão.</p> : null}
         {plan.documents.map((document) => <SefazChild key={document.draft?.id || document.id} document={document} onChange={onChange} />)}
         <p className="text-xs text-muted-foreground">Após a autorização, baixe o XML com protocolo e o DANFE em PDF da NF-e filha. A prévia da etapa 8 continua identificada como sem valor fiscal.</p>
