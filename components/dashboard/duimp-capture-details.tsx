@@ -187,18 +187,19 @@ function DuimpCategories({ snapshot }: { snapshot: DuimpSnapshotDetails }) {
 
       <Category title={`Itens (${items.length})`} icon={<Boxes size={18} />}>
         {items.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-3xl text-left text-sm">
-              <thead className="text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="pb-3">Item</th><th className="pb-3">Produto</th><th className="pb-3">NCM</th><th className="pb-3">Quantidade</th><th className="pb-3">Exportador</th><th className="pb-3 text-right">Valor aduaneiro</th></tr></thead>
+          <div className="max-w-full overflow-x-auto overscroll-x-contain pb-2" role="region" aria-label="Tabela de itens da DUIMP; role horizontalmente para ver todas as colunas" tabIndex={0}>
+            <table className="w-full min-w-[1240px] table-fixed text-left text-sm">
+              <thead className="text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="w-[70px] pb-3 pr-4">Item</th><th className="w-[190px] pb-3 pr-4">Código do produto</th><th className="w-[360px] pb-3 pr-4">Descrição</th><th className="w-[110px] pb-3 pr-4">NCM</th><th className="w-[170px] pb-3 pr-4">Quantidade</th><th className="w-[150px] pb-3 pr-4">Exportador</th><th className="w-[190px] pb-3 text-right">Valor aduaneiro</th></tr></thead>
               <tbody className="divide-y divide-border">
                 {items.map((item, index) => (
                   <tr key={`${display(first(item, "number", "item_number"), String(index))}-${index}`}>
-                    <td className="py-3 font-semibold">{display(first(item, "number", "item_number", "numeroItem"))}</td>
-                    <td className="max-w-sm py-3 pr-4"><p className="font-medium">{display(first(item, "description", "product_description"))}</p><p className="mt-1 text-xs text-muted-foreground">{display(first(item, "product_code", "catalog_product_code"))}</p></td>
-                    <td className="py-3 font-mono text-xs">{display(item.ncm)}</td>
-                    <td className="py-3">{display(first(item, "quantity", "commercial_quantity"))} {display(first(item, "commercial_unit", "unit"), "")}</td>
-                    <td className="py-3">{display(first(item, "exporter_code", "exporter_name"))}</td>
-                    <td className="py-3 text-right font-medium">{formatMoney(first(item, "customs_value", "product_value"))}</td>
+                    <td className="py-3 pr-4 align-top font-semibold">{display(first(item, "number", "item_number", "numeroItem"))}</td>
+                    <td className="break-words py-3 pr-4 align-top font-mono text-xs">{display(first(item, "product_code", "catalog_product_code"))}</td>
+                    <td className="break-words py-3 pr-4 align-top font-medium">{display(first(item, "description", "product_description"))}</td>
+                    <td className="whitespace-nowrap py-3 pr-4 align-top font-mono text-xs">{display(item.ncm)}</td>
+                    <td className="py-3 pr-4 align-top">{display(first(item, "quantity", "commercial_quantity"))} {display(first(item, "commercial_unit", "unit"), "")}</td>
+                    <td className="break-words py-3 pr-4 align-top">{display(first(item, "exporter_code", "exporter_name"))}</td>
+                    <td className="whitespace-nowrap py-3 text-right align-top font-medium">{formatMoney(first(item, "customs_value", "product_value"))}</td>
                   </tr>
                 ))}
               </tbody>
@@ -237,7 +238,7 @@ function DuimpCategories({ snapshot }: { snapshot: DuimpSnapshotDetails }) {
 
 function Category({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border bg-background p-4 sm:p-5">
+    <section className="min-w-0 max-w-full rounded-2xl border border-border bg-background p-4 sm:p-5">
       <h3 className="flex items-center gap-2 font-semibold text-foreground">{icon}{title}</h3>
       <div className="mt-4">{children}</div>
     </section>
