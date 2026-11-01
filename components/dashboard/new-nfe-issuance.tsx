@@ -86,7 +86,7 @@ export function NewNfeIssuance({ initialClientId }: { initialClientId?: string }
         <p className="eyebrow">Nova emissão</p>
         <h1 className="font-display mt-3 text-4xl font-semibold tracking-[-0.04em]">Preparar NF-e de importação</h1>
         <p className="mt-2 max-w-3xl text-muted-foreground">
-          Selecione o importador e valide as configurações necessárias. O processo continuará salvo quando você avançar para a DUIMP.
+          Selecione o importador e consulte uma DUIMP registrada, inclusive de um processo já encerrado. A conexão com o Portal Único será necessária na consulta; o perfil fiscal e a sequência NF-e podem ser configurados depois.
         </p>
       </header>
 
@@ -159,7 +159,7 @@ export function NewNfeIssuance({ initialClientId }: { initialClientId?: string }
         {createError ? <p className="text-sm text-destructive" role="alert">{createError}</p> : null}
         <button type="button" className="button button-primary min-h-12 px-6" disabled={!selectedClientId || creating} onClick={startProcess}>
           {creating ? <LoaderCircle className="animate-spin" size={17} /> : <ArrowRight size={17} />}
-          {creating ? "Criando processo..." : "Criar processo e informar DUIMP"}
+          {creating ? "Criando processo..." : "Criar processo e consultar DUIMP"}
         </button>
       </div>
 
