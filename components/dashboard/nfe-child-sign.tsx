@@ -107,7 +107,7 @@ export function NfeChildSignPanel({
         {!canAdminSign && !allSigned ? <p className="text-sm text-amber-800 dark:text-amber-300">Somente administradores podem assinar as NF-e.</p> : null}
         {!certificate && !readiness.loading && !allSigned ? (
           <p className="text-sm text-amber-800 dark:text-amber-300">
-            Ative o certificado A1 de produção do cliente. <Link className="underline" href={`/dashboard/clientes/${clientId}?section=certificates`} target="_blank">Abrir certificados</Link>
+            Ative o certificado A1 do cliente. <Link className="underline" href={`/dashboard/clientes/${clientId}?section=certificates`} target="_blank">Abrir certificados</Link>
           </p>
         ) : null}
         {certificate ? <p className="text-xs text-muted-foreground">A1 ativo: CNPJ {certificate.issuer_cnpj} · Validade até {certificate.valid_until ? new Date(certificate.valid_until).toLocaleDateString("pt-BR") : "não informada"}.</p> : null}
