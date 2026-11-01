@@ -186,10 +186,11 @@ function DuimpCategories({ snapshot }: { snapshot: DuimpSnapshotDetails }) {
       </Category>
 
       <Category title={`Itens (${items.length})`} icon={<Boxes size={18} />}>
+        <p className="mb-3 text-xs text-muted-foreground">Este identificador vem do produto no catálogo do Portal Único e pode se repetir. O código impresso na DANFE (cProd) é definido e revisado por item no rascunho da NF-e.</p>
         {items.length ? (
           <div className="max-w-full overflow-x-auto overscroll-x-contain pb-2" role="region" aria-label="Tabela de itens da DUIMP; role horizontalmente para ver todas as colunas" tabIndex={0}>
             <table className="w-full min-w-[1240px] table-fixed text-left text-sm">
-              <thead className="text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="w-[70px] pb-3 pr-4">Item</th><th className="w-[190px] pb-3 pr-4">Código do produto</th><th className="w-[360px] pb-3 pr-4">Descrição</th><th className="w-[110px] pb-3 pr-4">NCM</th><th className="w-[170px] pb-3 pr-4">Quantidade</th><th className="w-[150px] pb-3 pr-4">Exportador</th><th className="w-[190px] pb-3 text-right">Valor aduaneiro</th></tr></thead>
+              <thead className="text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="w-[70px] pb-3 pr-4">Item</th><th className="w-[190px] pb-3 pr-4">Código interno (catálogo)</th><th className="w-[360px] pb-3 pr-4">Descrição</th><th className="w-[110px] pb-3 pr-4">NCM</th><th className="w-[170px] pb-3 pr-4">Quantidade</th><th className="w-[150px] pb-3 pr-4">Exportador</th><th className="w-[190px] pb-3 text-right">Valor aduaneiro</th></tr></thead>
               <tbody className="divide-y divide-border">
                 {items.map((item, index) => (
                   <tr key={`${display(first(item, "number", "item_number"), String(index))}-${index}`}>
