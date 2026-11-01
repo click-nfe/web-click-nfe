@@ -112,7 +112,7 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
     try {
       if (action === "activate") {
         await activateFiscalCertificate(clientId, certificate.id);
-        setNotice("Certificado de produção ativado.");
+        setNotice("Certificado ativado.");
       } else {
         await validateFiscalCertificate(clientId, certificate.id);
         setNotice("Certificado validado novamente com sucesso.");
@@ -134,7 +134,7 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
             <p className="eyebrow">Assinatura digital</p>
             <h2 className="mt-3 text-2xl font-semibold">Certificados eCNPJ A1</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Certificados de produção usados para assinar as NF-e reais deste cliente.
+              Certificados usados para assinar as NF-e deste cliente.
             </p>
           </div>
           <button type="button" className="button button-primary shrink-0" onClick={() => { setFormError(null); setSheetOpen(true); }}>
@@ -171,9 +171,6 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold">
-                        Produção
-                      </span>
                       <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(certificate.status)}`}>
                         {statusLabels[certificate.status]}
                       </span>
@@ -252,9 +249,6 @@ export function ClientCertificates({ clientId }: { clientId: string }) {
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" className="field-input" disabled={uploading || actionId !== null} required />
             <span className="text-xs font-normal text-muted-foreground">A senha não retorna pela API nem é armazenada no banco.</span>
           </label>
-          <div className="rounded-xl border border-primary/15 bg-sage-soft p-4 text-sm text-sage-strong">
-            Ambiente: <strong>Produção</strong>. O fluxo de emissão não utiliza mais homologação.
-          </div>
           {formError ? <p className="text-sm text-destructive" role="alert">{formError}</p> : null}
           <div className="sticky bottom-0 flex justify-end gap-3 border-t border-border bg-background py-5">
             <button type="button" className="button button-secondary" onClick={() => setSheetOpen(false)} disabled={uploading}>Cancelar</button>
