@@ -195,7 +195,7 @@ function DuimpCategories({ snapshot }: { snapshot: DuimpSnapshotDetails }) {
                 {items.map((item, index) => (
                   <tr key={`${display(first(item, "number", "item_number"), String(index))}-${index}`}>
                     <td className="py-3 pr-4 align-top font-semibold">{display(first(item, "number", "item_number", "numeroItem"))}</td>
-                    <td className="break-words py-3 pr-4 align-top font-mono text-xs">{display(first(item, "product_code", "catalog_product_code"))}</td>
+                    <td className="break-words py-3 pr-4 align-top font-mono text-xs">{display(first(item, "catalog_product_code", "product_code"))}</td>
                     <td className="break-words py-3 pr-4 align-top font-medium">{display(first(item, "description", "product_description"))}</td>
                     <td className="whitespace-nowrap py-3 pr-4 align-top font-mono text-xs">{display(item.ncm)}</td>
                     <td className="py-3 pr-4 align-top">{display(first(item, "quantity", "commercial_quantity"))} {display(first(item, "commercial_unit", "unit"), "")}</td>
