@@ -63,8 +63,8 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
   const process = processRequest.data;
   const client = clientRequest.data;
   const hasSnapshot = Boolean(workflow?.latest_snapshot);
-  const prerequisitesReady = readiness.hasFiscalProfile && Boolean(readiness.activeSequence) && readiness.hasPortalConnection && !readiness.hasError;
-  const canFetch = prerequisitesReady && !portalUnavailable;
+  const portalReady = readiness.hasPortalConnection && !readiness.hasError;
+  const canFetch = portalReady && !portalUnavailable;
   const currentDuimpNumber = duimpNumber || process?.duimp_number || "";
 
   async function submitDuimp(event: FormEvent<HTMLFormElement>) {
@@ -74,7 +74,7 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
       return;
     }
     if (!canFetch) {
-      setError("Conclua os requisitos obrigatórios antes de consultar a DUIMP.");
+      setError("Valide a conexão com o Portal Único antes de consultar a DUIMP.");
       return;
     }
 
@@ -176,10 +176,11 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
               <span className="mt-1.5 block text-xs text-muted-foreground">Aceitamos o número com ou sem hífen.</span>
             </label>
 
-            {!prerequisitesReady ? (
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Você pode consultar uma DUIMP já registrada ou desembaraçada para revisar os dados e configurar o processo. A consulta não transmite uma nova NF-e.</p>
+            {!portalReady ? (
               <div className="mt-5 flex max-w-2xl items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4 text-sm text-amber-800 dark:text-amber-300">
                 <AlertTriangle className="mt-0.5 shrink-0" size={18} />
-                Conclua perfil fiscal, sequência NF-e e conexão com o Portal Único. Regras tributárias e certificado serão cobrados somente nas etapas em que forem necessários.
+                Valide a conexão com o Portal Único para consultar a DUIMP. Perfil fiscal e sequência NF-e serão necessários somente nas etapas de emissão.
               </div>
             ) : null}
             {error ? <p className="mt-4 text-sm text-destructive" role="alert">{error}</p> : null}
