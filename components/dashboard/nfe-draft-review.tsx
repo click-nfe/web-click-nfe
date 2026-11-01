@@ -347,7 +347,7 @@ function DraftDetails({ detail }: { detail: NfeDraftDetail }) {
             return (
               <details key={item.id} className="rounded-2xl border border-border p-4">
                 <summary className="cursor-pointer list-none marker:content-none"><div className="flex items-start justify-between gap-4"><div><p className="font-semibold">Item {item.item_number} · {item.description}</p><p className="mt-1 text-xs text-muted-foreground">NCM {item.ncm} · CFOP {item.cfop} · {item.commercial_quantity} {item.commercial_unit}</p></div><p className="shrink-0 font-semibold">{formatMoney(item.product_value)}</p></div></summary>
-                <div className="mt-4 border-t border-border pt-4"><InfoGrid fields={[["Código do produto", item.product_code], ["Valor unitário", formatMoney(item.commercial_unit_value)], ["Frete", formatMoney(item.freight_value)], ["Seguro", formatMoney(item.insurance_value)], ["ICMS CST", icms.cst], ["Base ICMS", formatMoney(icms.base)], ["Alíquota ICMS", icms.rate ? `${icms.rate}%` : null], ["Valor ICMS", formatMoney(icms.value)]]} /></div>
+                <div className="mt-4 border-t border-border pt-4"><InfoGrid fields={[["Código na NF-e (cProd)", item.product_code], ["Valor unitário", formatMoney(item.commercial_unit_value)], ["Frete", formatMoney(item.freight_value)], ["Seguro", formatMoney(item.insurance_value)], ["ICMS CST", icms.cst], ["Base ICMS", formatMoney(icms.base)], ["Alíquota ICMS", icms.rate ? `${icms.rate}%` : null], ["Valor ICMS", formatMoney(icms.value)]]} /></div>
               </details>
             );
           })}

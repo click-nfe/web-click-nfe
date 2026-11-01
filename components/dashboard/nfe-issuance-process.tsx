@@ -93,11 +93,11 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
     }
   }
 
-  if ((processRequest.isLoading || workflowRequest.isLoading) && !process && !workflow) {
+  if ((!process || !workflow) && (processRequest.isLoading || workflowRequest.isLoading || processRequest.isValidating || workflowRequest.isValidating || (!processRequest.error && !workflowRequest.error))) {
     return <div className="space-y-5" aria-label="Carregando processo"><div className="h-32 animate-pulse rounded-2xl bg-muted" /><div className="h-80 animate-pulse rounded-2xl bg-muted" /></div>;
   }
 
-  if (processRequest.error || workflowRequest.error || !process || !workflow) {
+  if (!process || !workflow) {
     return (
       <div className="surface-card p-10 text-center">
         <AlertTriangle className="mx-auto text-destructive" size={30} />
