@@ -249,10 +249,6 @@ export function OrganizationSettings() {
           <div className="p-5 sm:p-7">
             <dl className="grid gap-x-8 gap-y-6 sm:grid-cols-2 xl:grid-cols-4">
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ambiente</dt>
-                <dd className="mt-2 text-sm font-medium">Produção</dd>
-              </div>
-              <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Perfil de acesso</dt>
                 <dd className="mt-2 text-sm font-medium">{data.role_type}</dd>
               </div>
