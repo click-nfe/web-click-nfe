@@ -82,7 +82,7 @@ export function OrganizationSettings() {
     bffFetcher,
   );
 
-  const { data: availability } = usePortalUnicoAvailability();
+  const { data: availability, mutate: refreshAvailability } = usePortalUnicoAvailability();
   const portalUnavailable = availability?.state === "unavailable";
   const state = data?.last_error_code === "service_unavailable"
     ? { label: "Serviço indisponível", className: statePresentation.error.className }
@@ -128,6 +128,7 @@ export function OrganizationSettings() {
     try {
       const updated = await testPortalUnicoConnection();
       await mutate(updated, { revalidate: false });
+      void refreshAvailability();
       setNotice({
         kind: "success",
         message: "Conexão validada. A organização está pronta para consultar DUIMPs.",

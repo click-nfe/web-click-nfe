@@ -45,9 +45,6 @@ export function PortalUnicoAvailabilityBadge() {
       >
         <p className="font-semibold">Portal Único · {presentation.label}</p>
         <p className="mt-1 text-muted-foreground">{description}</p>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Verificação do serviço. A chave da organização é validada separadamente.
-        </p>
       </div>
     </div>
   );
