@@ -254,7 +254,7 @@ export function ClientSimplifiedIssuance({ client, onClientUpdated }: { client: 
       </details>)}
       {!form.items.length ? <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">Importe uma planilha ou adicione produtos manualmente.</p> : null}</div>
       <div className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-border pt-5">
-        {editing ? <button type="button" className="button button-secondary" onClick={() => { setEditing(null); setNotice(""); }}>Descartar alterações</button> : null}
+        {editing ? <button type="button" className="button button-secondary" onClick={() => { setEditing(null); setImportedClient(null); setImportedProfile(null); setExistingProfile(null); setNotice(""); }}>Descartar alterações</button> : null}
         <button type="button" className="button button-primary" disabled={working || !form.items.length} onClick={save}>
           {working ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}
           {working ? "Salvando..." : "Salvar configuração"}
