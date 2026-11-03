@@ -69,6 +69,7 @@ export const routes = {
       workflowState: (id: string) =>
         `/import-processes/${resourceId(id)}/nfe-workflow-state`,
       simplifiedReconciliation: (id: string) => `/import-processes/${resourceId(id)}/simplified-reconciliation`,
+      simplifiedPrepare: (id: string) => `/import-processes/${resourceId(id)}/simplified-prepare`,
       duimpFetch: (id: string) =>
         `/import-processes/${resourceId(id)}/duimp/fetch`,
       duimpSnapshots: (id: string) =>
@@ -131,6 +132,7 @@ export const routes = {
       workflowState: (id: string) =>
         `/api/import-processes/${resourceId(id)}/workflow`,
       simplifiedReconciliation: (id: string) => `/api/import-processes/${resourceId(id)}/simplified-reconciliation`,
+      simplifiedPrepare: (id: string) => `/api/import-processes/${resourceId(id)}/simplified-prepare`,
       duimpFetch: (id: string) =>
         `/api/import-processes/${resourceId(id)}/duimp`,
       duimpSnapshot: (id: string, snapshotId: string) =>
