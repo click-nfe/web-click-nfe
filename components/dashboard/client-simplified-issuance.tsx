@@ -5,16 +5,17 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import useSWR from "swr";
 
-import type { SimplifiedConfig, SimplifiedItem, SimplifiedSaved } from "@/lib/api/simplified-issuance";
+import type { SimplifiedConfig, SimplifiedItem, SimplifiedSaved, SimplifiedOperation, SimplifiedPreparation } from "@/lib/api/simplified-issuance";
 import { routes } from "@/lib/api/routes";
 import { bffErrorMessage, bffFetcher } from "@/lib/bff/client";
-import { saveSimplifiedConfig, startSimplifiedProcess } from "@/lib/bff/simplified-issuance";
+import { prepareSimplifiedProcess, saveSimplifiedConfig, startSimplifiedProcess } from "@/lib/bff/simplified-issuance";
 import { downloadSimplifiedWorkbook, emptySimplifiedConfig, importSimplifiedWorkbook } from "@/lib/simplified-issuance-import";
 
 const taxFields: Array<[string, string]> = [
   ["ii_rate", "II %"], ["ipi_rate", "IPI %"], ["pis_rate", "PIS %"],
   ["cofins_rate", "COFINS %"], ["icms_cst", "ICMS CST"],
   ["icms_rate", "ICMS %"], ["icms_base_reduction_rate", "Redução da base ICMS %"],
+  ["icms_origin", "Origem ICMS"], ["ipi_cst", "IPI CST"], ["pis_cst", "PIS CST"], ["cofins_cst", "COFINS CST"],
 ];
 const emptyItem = (): SimplifiedItem => ({
   reference: "", product_code: "", description: "", ncm: "", cfop: "", unit: "",
@@ -33,9 +34,11 @@ export function ClientSimplifiedIssuance({ clientId }: { clientId: string }) {
   const [starting, setStarting] = useState(false);
   const [notice, setNotice] = useState("");
   const [issue, setIssue] = useState("");
+  const [operation, setOperation] = useState<SimplifiedOperation>({ duimp_number: "", number: "", sign: false, duimp_overrides: {}, foreign_supplier: {}, additional_costs: {} });
+  const [prepared, setPrepared] = useState<SimplifiedPreparation | null>(null);
   const form = editing ?? data?.config ?? emptySimplifiedConfig();
 
-  function section(section: "document" | "transport" | "additional_info", key: string, value: string) {
+  function section(section: "document" | "transport" | "additional_info" | "payment" | "volume", key: string, value: string) {
     setEditing({ ...form, [section]: { ...form[section], [key]: value } });
   }
   function itemChange(index: number, key: keyof SimplifiedItem, value: string) {
@@ -54,8 +57,9 @@ export function ClientSimplifiedIssuance({ clientId }: { clientId: string }) {
     setWorking(true); setIssue(""); setNotice("");
     try {
       const imported = await importSimplifiedWorkbook(file);
-      setEditing(imported);
-      setNotice(`${imported.items.length} produto(s) encontrados. Revise os códigos, tributos e transporte antes de salvar. Campos ausentes ficaram vazios.`);
+      setEditing(imported.config);
+      setOperation(imported.operation);
+      setNotice(`${imported.config.items.length} produto(s) encontrados. Revise os códigos, tributos e transporte antes de salvar. Campos ausentes ficaram vazios.`);
     } catch (reason) { setIssue(reason instanceof Error ? reason.message : "Não foi possível ler a planilha."); }
     finally { setWorking(false); }
   }
@@ -77,6 +81,24 @@ export function ClientSimplifiedIssuance({ clientId }: { clientId: string }) {
       const process = await startSimplifiedProcess(clientId);
       router.push(`/dashboard/processos/${process.id}/emissao`);
     } catch (reason) { setIssue(bffErrorMessage(reason)); setStarting(false); }
+  }
+
+  async function prepare() {
+    if (!operation.duimp_number.trim()) { setIssue("Informe o número da DUIMP desta operação."); return; }
+    if (operation.number && (!/^\d{1,9}$/.test(operation.number) || Number(operation.number) < 1)) { setIssue("Número da NF-e inválido."); return; }
+    setStarting(true); setIssue("");
+    let processId = prepared?.status === "needs_review" ? prepared.process_id : "";
+    try {
+      if (!processId) {
+        const process = await startSimplifiedProcess(clientId, operation.duimp_number.trim());
+        processId = process.id;
+      }
+      const result = await prepareSimplifiedProcess(processId, { sign: operation.sign, duimp_overrides: operation.duimp_overrides, foreign_supplier: operation.foreign_supplier, additional_costs: operation.additional_costs, ...(operation.number ? { number: Number(operation.number) } : {}) });
+      setPrepared(result);
+    } catch (reason) {
+      setIssue(`${bffErrorMessage(reason)}${processId ? ` Processo criado: ${processId}. Abra-o para retomar.` : ""}`);
+      if (processId) setPrepared({ status: "needs_review", process_id: processId });
+    } finally { setStarting(false); }
   }
 
   if (isLoading && !data) return <div className="surface-card mt-8 h-64 animate-pulse" aria-label="Carregando configuração" />;
@@ -102,6 +124,31 @@ export function ClientSimplifiedIssuance({ clientId }: { clientId: string }) {
       </div>
       {notice ? <p className="mt-5 rounded-xl bg-sage-soft p-4 text-sm text-sage-strong" role="status">{notice}</p> : null}
       {issue ? <p className="mt-5 text-sm text-destructive" role="alert">{issue}</p> : null}
+      {data?.config ? <div className="mt-6 rounded-xl border border-border p-5">
+        <h3 className="font-semibold">Preparar XML desta operação</h3>
+        <p className="mt-1 text-sm text-muted-foreground">Consulta a DUIMP, confere os itens e gera o XML quando os dados estiverem completos. Não transmite à SEFAZ.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Field label="Número da DUIMP" value={operation.duimp_number} onChange={(v) => { setOperation({ ...operation, duimp_number: v }); setPrepared(null); }} placeholder="Informe a DUIMP desta operação" />
+          <Field label="Número da NF-e (opcional)" value={operation.number} onChange={(v) => setOperation({ ...operation, number: v })} placeholder="Usar sequência cadastrada" />
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={operation.sign} onChange={(e) => setOperation({ ...operation, sign: e.target.checked })} /> Assinar após validar (certificado ativo)</label>
+        </div>
+        <details className="mt-4 rounded-xl border border-border p-4"><summary className="cursor-pointer font-semibold">Complementos desta operação</summary>
+          <p className="mt-2 text-xs text-muted-foreground">Preencha apenas os dados ausentes da DUIMP. Confira desembaraço e país no documento oficial. Custos não devem ser lançados duas vezes.</p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {([ ["clearance_location", "Local do desembaraço"], ["clearance_state", "UF desembaraço"], ["clearance_date", "Data desembaraço (AAAA-MM-DD)"], ["transport_mode_code", "Código da via de transporte"] ] as const).map(([key, label]) => <Field key={key} label={label} value={operation.duimp_overrides[key] ?? ""} onChange={(v) => setOperation({ ...operation, duimp_overrides: { ...operation.duimp_overrides, [key]: v } })} />)}
+            {([ ["name", "Nome do fornecedor estrangeiro"], ["country_code", "Código BACEN do país"], ["country_name", "País" ] ] as const).map(([key, label]) => <Field key={key} label={label} value={operation.foreign_supplier[key] ?? ""} onChange={(v) => setOperation({ ...operation, foreign_supplier: { ...operation.foreign_supplier, [key]: v } })} />)}
+            {([ ["afrmm", "AFRMM (R$)"], ["siscomex_fee", "Taxa Siscomex (R$)"], ["thc", "THC (R$)"], ["other", "Outras despesas (R$)" ] ] as const).map(([key, label]) => <Field key={key} label={label} value={operation.additional_costs[key] ?? ""} onChange={(v) => setOperation({ ...operation, additional_costs: { ...operation.additional_costs, [key]: v } })} />)}
+          </div>
+        </details>
+        <button type="button" className="button button-primary mt-4" disabled={starting || Boolean(editing) || prepared?.status === "validated" || prepared?.status === "signed"} onClick={() => void prepare()}>{starting ? <LoaderCircle size={16} className="animate-spin" /> : <ArrowRight size={16} />} {starting ? "Preparando..." : prepared?.status === "needs_review" ? "Tentar novamente neste processo" : "Preparar XML"}</button>
+        {prepared ? <div className="mt-4 rounded-xl bg-sage-soft p-4 text-sm" role="status">
+          <p>{prepared.status === "signed" ? "XML assinado e pronto para revisão." : prepared.status === "validated" ? "XML validado no XSD e pronto para revisão." : prepared.message || "Há pendências a revisar antes de gerar o XML."}</p>
+          {prepared.unmatched_items?.length ? <p>Itens sem associação: {prepared.unmatched_items.join(", ")}.</p> : null}
+          {prepared.unclassified_items?.length ? <p>Itens sem classificação: {prepared.unclassified_items.join(", ")}.</p> : null}
+          {prepared.results?.filter((row) => !row.success).map((row, index) => <p key={index}>Rascunho {row.draft_id}: {row.message || "Falha na validação XSD. Revise no processo."}</p>)}
+          <button className="mt-3 font-semibold text-sage-strong underline" type="button" onClick={() => router.push(`/dashboard/processos/${prepared.process_id}/emissao`)}>Abrir processo e revisar</button>
+        </div> : null}
+      </div> : null}
     </section>
 
     <section className="surface-card p-6 sm:p-8">
@@ -109,6 +156,7 @@ export function ClientSimplifiedIssuance({ clientId }: { clientId: string }) {
       <p className="mt-1 text-sm text-muted-foreground">O emitente vem do perfil fiscal do cliente. Campos não preenchidos permanecem em branco.</p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <Field label="Natureza da operação" value={form.document.operation_nature ?? ""} onChange={(v) => section("document", "operation_nature", v)} />
+        <Field label="Série NF-e" value={form.series ?? ""} onChange={(v) => setEditing({ ...form, series: v })} placeholder="1" />
         <label><span className="field-label">Modalidade do frete</span><select className="field-input" value={form.transport.freight_mode ?? ""} onChange={(e) => section("transport", "freight_mode", e.target.value)}><option value="">Definir no processo</option><option value="0">0 — Emitente</option><option value="1">1 — Destinatário</option><option value="2">2 — Terceiros</option><option value="3">3 — Próprio emitente</option><option value="4">4 — Próprio destinatário</option><option value="9">9 — Sem frete</option></select></label>
         <Field label="Transportadora" value={form.transport.carrier_name ?? ""} onChange={(v) => section("transport", "carrier_name", v)} />
         <Field label="CNPJ/CPF transportadora" value={form.transport.carrier_tax_id ?? ""} onChange={(v) => section("transport", "carrier_tax_id", v)} />
@@ -118,6 +166,10 @@ export function ClientSimplifiedIssuance({ clientId }: { clientId: string }) {
         <Field label="UF da transportadora" value={form.transport.carrier_state ?? ""} onChange={(v) => section("transport", "carrier_state", v)} />
         <Field label="Informações complementares" value={form.additional_info.complementary ?? ""} onChange={(v) => section("additional_info", "complementary", v)} />
       </div>
+      <details className="mt-5 rounded-xl border border-border p-4"><summary className="cursor-pointer font-semibold">Volumes e pagamento padrão</summary><div className="mt-4 grid gap-4 sm:grid-cols-2">
+        {([ ["quantity", "Quantidade de volumes"], ["species", "Espécie"], ["brand", "Marca"], ["numbering", "Numeração dos volumes"], ["net_weight", "Peso líquido"], ["gross_weight", "Peso bruto"] ] as const).map(([key, label]) => <Field key={key} label={label} value={form.volume?.[key] ?? ""} onChange={(v) => section("volume", key, v)} />)}
+        {([ ["payment_indicator", "Indicador de pagamento (0 ou 1)"], ["method", "Meio de pagamento (2 dígitos)"], ["description", "Descrição do pagamento"], ["value", "Valor do pagamento"] ] as const).map(([key, label]) => <Field key={key} label={label} value={form.payment?.[key] ?? ""} onChange={(v) => section("payment", key, v)} />)}
+      </div><p className="mt-3 text-xs text-muted-foreground">Revise volumes e pagamentos a cada DUIMP; deixe em branco quando variáveis.</p></details>
       <details className="mt-5 rounded-xl border border-border p-4"><summary className="cursor-pointer font-semibold">Outras informações recorrentes</summary><div className="mt-4 grid gap-4 sm:grid-cols-2">
         <Field label="Informações fiscais adicionais" value={form.additional_info.fiscal ?? ""} onChange={(v) => section("additional_info", "fiscal", v)} />
         <Field label="Fundamento legal" value={form.additional_info.legal_text ?? ""} onChange={(v) => section("additional_info", "legal_text", v)} />
