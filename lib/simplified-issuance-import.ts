@@ -224,12 +224,12 @@ export async function downloadSimplifiedWorkbook() {
   const productRows = [productLabels, productHelp, productKeys];
   const productSheet = utils.aoa_to_sheet(productRows);
   productSheet["!cols"] = productKeys.map((key) => ({ wch: key === "description" ? 52 : key === "product_code" ? 25 : 20 }));
-  productSheet["!rows"] = [null, null, { hidden: true }];
+  productSheet["!rows"] = [{}, {}, { hidden: true }];
   utils.book_append_sheet(workbook, productSheet, "Produtos");
   const icmsRows = [icmsLabels, icmsHelp, icmsKeys];
   const icmsSheet = utils.aoa_to_sheet(icmsRows);
   icmsSheet["!cols"] = icmsKeys.map(() => ({ wch: 22 }));
-  icmsSheet["!rows"] = [null, null, { hidden: true }];
+  icmsSheet["!rows"] = [{}, {}, { hidden: true }];
   utils.book_append_sheet(workbook, icmsSheet, "ICMS");
   writeFile(workbook, "modelo-emissao-simplificada.xlsx");
 }
