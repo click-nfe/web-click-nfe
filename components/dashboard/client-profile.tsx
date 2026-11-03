@@ -8,6 +8,7 @@ import {
   FileClock,
   FileKey2,
   FilePenLine,
+  FileSpreadsheet,
   Hash,
   History,
   PlugZap,
@@ -25,6 +26,7 @@ import { ClientForm } from "@/components/dashboard/client-form";
 import { ClientCertificates } from "@/components/dashboard/client-certificates";
 import { ClientFiscalProfileSection } from "@/components/dashboard/client-fiscal-profile-form";
 import { ClientTaxRules } from "@/components/dashboard/client-tax-rules";
+import { ClientSimplifiedIssuance } from "@/components/dashboard/client-simplified-issuance";
 import { Sheet } from "@/components/ui/sheet";
 import type { ClientRecord } from "@/lib/api/client-record";
 import type { ImportProcessListResponse } from "@/lib/api/import-process";
@@ -54,6 +56,7 @@ const navigation: Array<{
   { value: "certificates", label: "Certificados eCNPJ", icon: FileKey2 },
   { value: "fiscal-profile", label: "Perfil fiscal", icon: SlidersHorizontal },
   { value: "tax-rules", label: "Regras tributárias", icon: Scale },
+  { value: "simplified-issuance", label: "Emissão simplificada", icon: FileSpreadsheet },
   { value: "processes", label: "Processos", icon: History },
 ];
 
@@ -206,6 +209,15 @@ function ClientOverview({ client }: { client: ClientRecord }) {
             icon={FileClock}
             title="Histórico de processos"
             description="Processos e DUIMPs vinculados ao cliente, com status e próxima etapa."
+            status="Disponível"
+            available
+          />
+          <ConfigurationCard
+            clientId={client.id}
+            section="simplified-issuance"
+            icon={FileSpreadsheet}
+            title="Emissão simplificada"
+            description="Cadastre um modelo reutilizável, importe uma planilha e inicie novas emissões para este cliente."
             status="Disponível"
             available
           />
@@ -526,6 +538,7 @@ export function ClientProfile({
       ) : null}
       {section === "certificates" ? <ClientCertificates clientId={client.id} /> : null}
       {section === "tax-rules" ? <ClientTaxRules client={client} /> : null}
+      {section === "simplified-issuance" ? <ClientSimplifiedIssuance clientId={client.id} /> : null}
       {section === "fiscal-profile" ? (
         <ClientFiscalProfileSection client={client} />
       ) : null}
