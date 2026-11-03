@@ -115,7 +115,7 @@ export type CreateImportProcessPayload = {
 
 export type UpdateImportProcessPayload = {
   duimp_number: string;
-  source: "portal_unico";
+  source: "portal_unico" | "simplified";
 };
 
 export type NfeWorkflowStep = {
@@ -279,6 +279,7 @@ export type NfeItemRuleCandidate = {
 
 export type NfeItemClassification = {
   duimp_item_number: string;
+  source?: string | null;
   product_code: string | null;
   description: string | null;
   ncm: string | null;

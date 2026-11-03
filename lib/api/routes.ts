@@ -51,6 +51,8 @@ export const routes = {
         `/clients/${resourceId(id)}/import-tax-rules/simulate`,
       nfeNumberSequences: (id: string) =>
         `/clients/${resourceId(id)}/nfe-number-sequences`,
+      simplifiedIssuance: (id: string) => `/clients/${resourceId(id)}/simplified-issuance`,
+      simplifiedIssuanceStart: (id: string) => `/clients/${resourceId(id)}/simplified-issuance/start`,
     },
     fiscalReference: {
       postalCode: (zipCode: string) =>
@@ -66,6 +68,7 @@ export const routes = {
       detail: (id: string) => `/import-processes/${resourceId(id)}`,
       workflowState: (id: string) =>
         `/import-processes/${resourceId(id)}/nfe-workflow-state`,
+      simplifiedReconciliation: (id: string) => `/import-processes/${resourceId(id)}/simplified-reconciliation`,
       duimpFetch: (id: string) =>
         `/import-processes/${resourceId(id)}/duimp/fetch`,
       duimpSnapshots: (id: string) =>
@@ -127,6 +130,7 @@ export const routes = {
       detail: (id: string) => `/api/import-processes/${resourceId(id)}`,
       workflowState: (id: string) =>
         `/api/import-processes/${resourceId(id)}/workflow`,
+      simplifiedReconciliation: (id: string) => `/api/import-processes/${resourceId(id)}/simplified-reconciliation`,
       duimpFetch: (id: string) =>
         `/api/import-processes/${resourceId(id)}/duimp`,
       duimpSnapshot: (id: string, snapshotId: string) =>
@@ -183,6 +187,8 @@ export const routes = {
         `/api/clients/${resourceId(id)}/import-tax-rules/simulate`,
       nfeNumberSequences: (id: string) =>
         `/api/clients/${resourceId(id)}/nfe-number-sequences`,
+      simplifiedIssuance: (id: string) => `/api/clients/${resourceId(id)}/simplified-issuance`,
+      simplifiedIssuanceStart: (id: string) => `/api/clients/${resourceId(id)}/simplified-issuance/start`,
       issuanceReadiness: (id: string) =>
         `/api/clients/${resourceId(id)}/issuance-readiness`,
     },

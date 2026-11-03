@@ -23,6 +23,7 @@ import { NfeDocumentPlanPanel } from "@/components/dashboard/nfe-document-plan";
 import { NfeRoadmap } from "@/components/dashboard/nfe-roadmap";
 import { NfeSectionHeader } from "@/components/dashboard/nfe-section-header";
 import { NfeNumberSequenceSheet } from "@/components/dashboard/nfe-number-sequence-sheet";
+import { SimplifiedReconciliation } from "@/components/dashboard/simplified-reconciliation";
 import type { ClientRecord } from "@/lib/api/client-record";
 import type { ImportProcessRecord, NfeWorkflowState } from "@/lib/api/import-process";
 import { routes } from "@/lib/api/routes";
@@ -82,7 +83,7 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
     setError(null);
     try {
       const normalized = formattedDuimp(currentDuimpNumber);
-      await updateImportProcess(processId, { duimp_number: normalized, source: "portal_unico" });
+      await updateImportProcess(processId, { duimp_number: normalized, source: process?.source.toLowerCase() === "simplified" ? "simplified" : "portal_unico" });
       await fetchProcessDuimp(processId);
       setDuimpNumber(normalized);
       await Promise.all([processRequest.mutate(), workflowRequest.mutate()]);
@@ -192,6 +193,10 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
           </form>
         )}
       </section>
+
+      {hasSnapshot && process.source.toLowerCase() === "simplified" ? (
+        <SimplifiedReconciliation processId={processId} onUpdated={() => { void workflowRequest.mutate(); }} />
+      ) : null}
 
       {workflow.latest_snapshot && clientId ? (
         <NfeContextReview

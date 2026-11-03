@@ -4,6 +4,7 @@ export const clientProfileSections = [
   "certificates",
   "fiscal-profile",
   "tax-rules",
+  "simplified-issuance",
   "processes",
 ] as const;
 
