@@ -1,4 +1,5 @@
 import type { SimplifiedConfig, SimplifiedItem, SimplifiedOperation } from "@/lib/api/simplified-issuance";
+import { fieldDefinitions } from "@/lib/simplified-issuance-fields";
 
 export function emptySimplifiedConfig(): SimplifiedConfig {
   return { series: "", document: {}, transport: {}, payment: {}, volume: {}, additional_info: {}, items: [] };
@@ -9,6 +10,34 @@ type Rows = Cell[][];
 const value = (cell: Cell) => String(cell ?? "").trim();
 const digits = (cell: Cell) => value(cell).replace(/\D/g, "");
 const rate = (cell: Cell) => value(cell).replace(",", ".");
+export type ImportedSimplifiedWorkbook = { config: SimplifiedConfig; operation: SimplifiedOperation; client: Record<string, string>; fiscalProfile: Record<string, string> };
+const productKeys = ["reference", "product_code", "description", "ncm", "cfop", "unit", "import_purpose", "ii_rate", "ipi_rate", "pis_rate", "cofins_rate", "ipi_cst", "pis_cst", "cofins_cst"];
+const icmsKeys = ["reference", "ncm", "icms_origin", "icms_cst", "icms_rate", "icms_base_reduction_rate", "icms_deferment_rate", "icms_st_base_method", "icms_st_mva_rate", "icms_st_base_reduction_rate", "icms_st_rate", "icms_st_retained_base", "icms_st_retained_rate", "icms_st_retained_value", "icms_tax_treatment_confirmed"];
+const productLabels = ["Referência no catálogo", "Código na NF-e", "Descrição do produto", "NCM", "CFOP", "Unidade", "Finalidade", "II %", "IPI %", "PIS %", "COFINS %", "IPI CST", "PIS CST", "COFINS CST"];
+const icmsLabels = ["Referência no catálogo", "NCM", "Origem", "CST", "Alíquota %", "Redução base %", "Diferimento %", "Modalidade base ST", "MVA ST %", "Redução base ST %", "Alíquota ST %", "Base ST retida", "Alíquota ST retida %", "Valor ST retido", "Tratamento confirmado?"];
+const productHelp = ["Código do produto na DUIMP, usado para vincular à captura.", "Código interno a constar no campo cProd da NF-e.", "Descrição do produto no XML; revise o cadastro.", "Oito dígitos, sem pontuação.", "Quatro dígitos da operação de importação.", "Unidade comercial de até seis caracteres.", "Revenda, industrialização, ativo ou uso e consumo.", "Alíquota de II em porcentagem.", "Alíquota de IPI em porcentagem.", "Alíquota de PIS em porcentagem.", "Alíquota de COFINS em porcentagem.", "CST do IPI de dois dígitos.", "CST do PIS de dois dígitos.", "CST da COFINS de dois dígitos."];
+const icmsHelp = ["Mesma referência da aba Produtos.", "Mesmo NCM da aba Produtos.", "Origem da mercadoria, um dígito.", "CST de dois dígitos; confirme com responsável fiscal.", "Alíquota nominal do ICMS em porcentagem.", "Redução da base de cálculo em porcentagem.", "Percentual de diferimento quando aplicável.", "Modalidade 4 ou 6, se houver substituição tributária.", "Margem de valor agregado da ST em porcentagem.", "Redução da base de ST em porcentagem.", "Alíquota da ST em porcentagem.", "Base do ICMS ST retido em reais, se aplicável.", "Alíquota do ICMS ST retido em porcentagem.", "Valor do ICMS ST retido em reais, se aplicável.", "Sim somente após revisão fiscal por administrador; em branco ou Não mantém pendente."];
+
+function structuredRows(rows: Rows, tab: string) {
+  if (value(rows[0]?.[0]) !== "Nome do campo" || value(rows[0]?.[1]) !== "Descrição" || value(rows[0]?.[2]) !== "Valor" || value(rows[0]?.[3]) !== "Chave interna — não alterar") throw new Error(`Cabeçalho da aba ${tab} inválido.`);
+  const result: Record<string, string> = {};
+  const definitions = fieldDefinitions[tab];
+  for (let index = 0; index < definitions.length; index++) {
+    const row = rows[index + 1] || [];
+    if (value(row[3]) !== definitions[index].key) throw new Error(`Chave interna alterada na aba ${tab}, linha ${index + 2}. Baixe um novo modelo.`);
+    if (value(row[2])) result[definitions[index].key] = value(row[2]);
+  }
+  if (rows.slice(definitions.length + 1).some(row => row.some(cell => value(cell)))) throw new Error(`Linhas adicionais na aba ${tab} não são aceitas.`);
+  return result;
+}
+
+function tabularRows(rows: Rows, tab: string, keys: string[]) {
+  if (keys.some((key, index) => value(rows[2]?.[index]) !== key)) throw new Error(`Chaves internas da aba ${tab} foram alteradas. Baixe um novo modelo.`);
+  return rows.slice(3).filter(row => row.some(cell => value(cell))).map((row, index) => {
+    if (row.length > keys.length && row.slice(keys.length).some(cell => value(cell))) throw new Error(`Coluna inesperada na aba ${tab}, linha ${index + 4}.`);
+    return Object.fromEntries(keys.map((key, col) => [key, value(row[col])]));
+  });
+}
 
 function purpose(valueText: string) {
   const normalized = valueText.toLocaleLowerCase("pt-BR");
@@ -45,7 +74,7 @@ function itemFromBase(row: Cell[]): SimplifiedItem | null {
   };
 }
 
-export async function importSimplifiedWorkbook(file: File): Promise<{ config: SimplifiedConfig; operation: SimplifiedOperation }> {
+export async function importSimplifiedWorkbook(file: File): Promise<ImportedSimplifiedWorkbook> {
   if (!/\.(xls|xlsx)$/i.test(file.name)) throw new Error("Escolha uma planilha .xls ou .xlsx.");
   if (file.size > 5 * 1024 * 1024) throw new Error("A planilha deve ter até 5 MB.");
   const { read, utils } = await import("xlsx");
@@ -59,6 +88,55 @@ export async function importSimplifiedWorkbook(file: File): Promise<{ config: Si
   const modelo = sheet("Emissão simplificada");
   const general = sheet("Configuração");
   const operationRows = sheet("Operação");
+  if (workbook.Sheets["Leia-me"]) {
+    const client = structuredRows(sheet("Cliente"), "Cliente");
+    const fiscalProfile = structuredRows(sheet("Perfil fiscal"), "Perfil fiscal");
+    const note = structuredRows(sheet("Nota fiscal"), "Nota fiscal");
+    const transport = structuredRows(sheet("Transporte"), "Transporte");
+    const operationValues = structuredRows(operationRows, "Operação");
+    const items = tabularRows(sheet("Produtos"), "Produtos", productKeys).map(row => ({
+      reference: row.reference, product_code: row.product_code, description: row.description,
+      ncm: digits(row.ncm), cfop: digits(row.cfop), unit: row.unit, import_purpose: purpose(row.import_purpose),
+      tax_configuration: Object.fromEntries(productKeys.slice(7).filter(key => row[key]).map(key => [key, rate(row[key])])),
+    }));
+    if (!items.length || items.length > 500 || items.some(item => item.ncm.length !== 8 || !item.reference)) throw new Error("Informe de 1 a 500 produtos com referência e NCM de oito dígitos.");
+    const byReference = new Map<string, SimplifiedItem>();
+    for (const item of items) {
+      const key = `${item.reference.trim().toLowerCase()}|${item.ncm}`;
+      if (byReference.has(key)) throw new Error(`Referência repetida em Produtos: ${item.reference} / ${item.ncm}.`);
+      byReference.set(key, item);
+    }
+    const icmsRows = tabularRows(sheet("ICMS"), "ICMS", icmsKeys);
+    if (icmsRows.length !== items.length) throw new Error("A aba ICMS deve ter exatamente uma linha para cada produto.");
+    const used = new Set<string>();
+    for (const row of icmsRows) {
+      const key = `${row.reference.trim().toLowerCase()}|${digits(row.ncm)}`;
+      const item = byReference.get(key);
+      if (!item || used.has(key)) throw new Error(`Referência/NCM da aba ICMS sem correspondência única: ${row.reference}.`);
+      used.add(key);
+      for (const field of icmsKeys.slice(2)) {
+        if (!row[field]) continue;
+        if (field === "icms_tax_treatment_confirmed") {
+          if (!["sim", "não", "nao"].includes(row[field].toLowerCase())) throw new Error(`Use Sim ou Não para confirmação fiscal de ${row.reference}.`);
+          item.tax_configuration[field] = row[field].toLowerCase() === "sim";
+        } else item.tax_configuration[field] = ["icms_origin", "icms_cst", "icms_st_base_method"].includes(field) ? row[field] : rate(row[field]);
+      }
+    }
+    const config = emptySimplifiedConfig(); config.items = items;
+    for (const [key, data] of Object.entries({ ...note, ...transport })) {
+      if (key === "series") { config.series = data; continue; }
+      const [part, field] = key.split(".");
+      if (!part || !field || !["document", "transport", "volume", "payment", "additional_info"].includes(part)) throw new Error(`Campo não reconhecido: ${key}.`);
+      (config[part as "document" | "transport" | "volume" | "payment" | "additional_info"] as Record<string, string>)[field] = data;
+    }
+    const operation: SimplifiedOperation = { duimp_number: operationValues.duimp_number || "", number: operationValues.number || "", sign: operationValues.sign?.toLowerCase() === "sim", duimp_overrides: {}, foreign_supplier: {}, additional_costs: {} };
+    if (operationValues.sign && !["sim", "não", "nao"].includes(operationValues.sign.toLowerCase())) throw new Error("Use Sim ou Não em Assinar XML.");
+    for (const [key, data] of Object.entries(operationValues)) {
+      const [part, field] = key.split(".");
+      if (["duimp_overrides", "foreign_supplier", "additional_costs"].includes(part) && field) operation[part as "duimp_overrides" | "foreign_supplier" | "additional_costs"][field] = part === "additional_costs" ? rate(data) : data;
+    }
+    return { config, operation, client, fiscalProfile };
+  }
   let items: SimplifiedItem[];
   let source: Rows;
   if (modelo.length && value(modelo[0]?.[0]) === "Referência" && value(modelo[0]?.[3]) === "NCM") {
@@ -116,32 +194,42 @@ export async function importSimplifiedWorkbook(file: File): Promise<{ config: Si
       else throw new Error(`Campo da operação desconhecido: ${key}`);
     }
   }
-  return { config, operation };
+  return { config, operation, client: {}, fiscalProfile: {} };
 }
 
 export async function downloadSimplifiedWorkbook() {
   const { utils, writeFile } = await import("xlsx");
   const workbook = utils.book_new();
-  const rows = [["Referência", "Código NF-e", "Descrição", "NCM", "CFOP", "Unidade", "Finalidade", "II %", "IPI %", "PIS %", "COFINS %", "ICMS CST", "ICMS %", "Redução base ICMS %", "Origem ICMS", "IPI CST", "PIS CST", "COFINS CST"],
-    ["REF-001", "PROD-001", "Descrição do produto", "39172290", "3102", "UN", "Comercialização", "", "", "", "", "00", "", "", "", "", "", ""]];
-  const sheet = utils.aoa_to_sheet(rows);
-  sheet["!cols"] = [16, 18, 38, 14, 10, 12, 22, 10, 10, 10, 12, 12, 10].map((wch) => ({ wch }));
-  utils.book_append_sheet(workbook, sheet, "Emissão simplificada");
-  const config = utils.aoa_to_sheet([["Campo", "Valor", "Orientação"],
-    ["series", "", "Série recorrente; o número da NF-e vai na aba Operação."],
-    ["document.operation_nature", "", "Natureza da operação"], ["document.presence_indicator", "", "0, 1, 2, 3, 4, 5 ou 9"],
-    ["document.intermediary_indicator", "", "0 ou 1"], ["transport.freight_mode", "", "0, 1, 2, 3, 4 ou 9"],
-    ...["carrier_name", "carrier_tax_id", "carrier_state_registration", "carrier_address", "carrier_city", "carrier_state"].map((key) => [`transport.${key}`, "", "Dados da transportadora, se aplicáveis"]),
-    ...["quantity", "species", "brand", "numbering", "net_weight", "gross_weight"].map((key) => [`volume.${key}`, "", "Volume padrão; revise a cada operação"]),
-    ...["payment_indicator", "method", "description", "value"].map((key) => [`payment.${key}`, "", "Pagamento padrão; revise a cada operação"]),
-    ...["fiscal", "complementary", "legal_text"].map((key) => [`additional_info.${key}`, "", "Informação recorrente; sem dados de uma DUIMP específica"])]);
-  config["!cols"] = [{ wch: 38 }, { wch: 40 }, { wch: 62 }];
-  utils.book_append_sheet(workbook, config, "Configuração");
-  const operation = utils.aoa_to_sheet([["Campo", "Valor", "Orientação"], ["duimp_number", "", "DUIMP desta operação"], ["number", "", "Opcional; sem número, usa a sequência da NF-e configurada"], ["sign", "Não", "Sim exige XSD válido, revisão fiscal e certificado ativo; nunca transmite à SEFAZ"],
-    ...["clearance_location", "clearance_state", "clearance_date", "transport_mode_code"].map((key) => [`duimp_overrides.${key}`, "", "Preencher somente se ausente na consulta da DUIMP; conferir fonte aduaneira"]),
-    ...["name", "country_code", "country_name"].map((key) => [`foreign_supplier.${key}`, "", "Fornecedor estrangeiro desta operação; código BACEN com 4 dígitos"]),
-    ...["afrmm", "siscomex_fee", "thc", "other"].map((key) => [`additional_costs.${key}`, "", "Valor desta operação em reais; evite repetir custo já presente na DUIMP"])]);
-  operation["!cols"] = [{ wch: 28 }, { wch: 30 }, { wch: 80 }];
-  utils.book_append_sheet(workbook, operation, "Operação");
+  const guide = utils.aoa_to_sheet([
+    ["EMISSÃO SIMPLIFICADA · COMO PREENCHER", ""],
+    ["Etapa", "O que fazer"],
+    ["1. Cliente e perfil fiscal", "Confira o CNPJ do cliente já cadastrado. O perfil fiscal deve conter os dados completos do emitente. Campos vazios não apagam dados existentes."],
+    ["2. Nota fiscal e transporte", "Preencha apenas padrões recorrentes. Volumes e pagamentos variáveis devem ser revisados em cada operação."],
+    ["3. Produtos e ICMS", "Uma linha por produto em cada aba. Use a mesma Referência e NCM nas duas. Complete CFOP, finalidade, origem, CST e alíquota; confira reduções e outras regras com o responsável fiscal."],
+    ["4. Operação", "Informe a DUIMP. Número da NF-e e assinatura são opcionais. Não copie valores do rascunho sem conferir se já vieram da DUIMP."],
+    ["5. Upload", "Na aba Emissão simplificada do cliente, importe o arquivo, revise os campos preenchidos e salve. Depois use Preparar XML e resolva as pendências apontadas."],
+    ["Estrutura", "Nas abas de campos, edite somente Valor. A chave técnica fica na coluna final oculta. Em Produtos e ICMS, a terceira linha de chaves fica oculta. Não altere nem exclua as chaves; o upload confere sua integridade."],
+    ["Resultado", "O XML só é gerado após conferir os dados exigidos. Assinatura requer certificado ativo e confirmação fiscal; este fluxo não transmite à SEFAZ."],
+    ["Abas", "Cliente: cadastro; Perfil fiscal: emitente; Nota fiscal: padrões da NF-e; Transporte: frete/volumes; Produtos: mercadorias e tributos federais; ICMS: valores por referência/NCM nesta configuração; Operação: dados variáveis."],
+    ["ICMS", "A aba ICMS preenche os valores dos itens desta emissão simplificada. Ela não altera as regras tributárias globais do cliente. CST, redução, diferimento e ST exigem conferência fiscal antes de assinar."],
+  ]);
+  guide["!cols"] = [{ wch: 30 }, { wch: 125 }];
+  utils.book_append_sheet(workbook, guide, "Leia-me");
+  for (const [tab, definitions] of Object.entries(fieldDefinitions)) {
+    const rows = [["Nome do campo", "Descrição", "Valor", "Chave interna — não alterar"], ...definitions.map(({ label, description, key }) => [label, description, key === "sign" ? "Não" : "", key])];
+    const sheet = utils.aoa_to_sheet(rows);
+    sheet["!cols"] = [{ wch: 39 }, { wch: 84 }, { wch: 38 }, { hidden: true }];
+    utils.book_append_sheet(workbook, sheet, tab);
+  }
+  const productRows = [productLabels, productHelp, productKeys];
+  const productSheet = utils.aoa_to_sheet(productRows);
+  productSheet["!cols"] = productKeys.map((key) => ({ wch: key === "description" ? 52 : key === "product_code" ? 25 : 20 }));
+  productSheet["!rows"] = [null, null, { hidden: true }];
+  utils.book_append_sheet(workbook, productSheet, "Produtos");
+  const icmsRows = [icmsLabels, icmsHelp, icmsKeys];
+  const icmsSheet = utils.aoa_to_sheet(icmsRows);
+  icmsSheet["!cols"] = icmsKeys.map(() => ({ wch: 22 }));
+  icmsSheet["!rows"] = [null, null, { hidden: true }];
+  utils.book_append_sheet(workbook, icmsSheet, "ICMS");
   writeFile(workbook, "modelo-emissao-simplificada.xlsx");
 }
