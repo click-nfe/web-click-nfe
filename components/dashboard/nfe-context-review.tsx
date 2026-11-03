@@ -444,7 +444,7 @@ function ClassificationRow({ item }: { item: NfeItemClassification }) {
       <td className="px-6 py-4 font-mono text-xs">{item.ncm || "—"}</td>
       <td className="px-6 py-4">{item.import_purpose ? purposeLabels[item.import_purpose] : "—"}</td>
       <td className="px-6 py-4 font-mono text-xs">{item.cfop || "—"}</td>
-      <td className="max-w-52 px-6 py-4">{item.tax_rule?.name ?? "—"}</td>
+      <td className="max-w-52 px-6 py-4">{item.source === "simplified" ? "Emissão simplificada" : item.tax_rule?.name ?? "—"}</td>
       <td className="px-6 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${ready ? "bg-sage-soft text-sage-strong" : "bg-amber-100 text-amber-800 dark:bg-amber-950/55 dark:text-amber-200"}`}>{statusLabels[item.status]}</span></td>
     </tr>
   );
