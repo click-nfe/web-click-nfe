@@ -538,7 +538,7 @@ export function ClientProfile({
       ) : null}
       {section === "certificates" ? <ClientCertificates clientId={client.id} /> : null}
       {section === "tax-rules" ? <ClientTaxRules client={client} /> : null}
-      {section === "simplified-issuance" ? <ClientSimplifiedIssuance clientId={client.id} /> : null}
+      {section === "simplified-issuance" ? <ClientSimplifiedIssuance client={client} onClientUpdated={(updated) => mutate(updated, { revalidate: false })} /> : null}
       {section === "fiscal-profile" ? (
         <ClientFiscalProfileSection client={client} />
       ) : null}
