@@ -6,16 +6,25 @@ import { useState } from "react";
 import useSWR from "swr";
 
 import type { SimplifiedConfig, SimplifiedItem, SimplifiedSaved, SimplifiedOperation, SimplifiedPreparation } from "@/lib/api/simplified-issuance";
+import type { ClientRecord, UpdateClientPayload } from "@/lib/api/client-record";
+import type { ClientFiscalProfile, UpsertClientFiscalProfilePayload } from "@/lib/api/client-fiscal-profile";
 import { routes } from "@/lib/api/routes";
 import { bffErrorMessage, bffFetcher } from "@/lib/bff/client";
+import { updateClient } from "@/lib/bff/clients";
+import { getClientFiscalProfile, upsertClientFiscalProfile } from "@/lib/bff/client-fiscal-profile";
 import { prepareSimplifiedProcess, saveSimplifiedConfig, startSimplifiedProcess } from "@/lib/bff/simplified-issuance";
 import { downloadSimplifiedWorkbook, emptySimplifiedConfig, importSimplifiedWorkbook } from "@/lib/simplified-issuance-import";
+import { fieldDefinitions } from "@/lib/simplified-issuance-fields";
 
 const taxFields: Array<[string, string]> = [
   ["ii_rate", "II %"], ["ipi_rate", "IPI %"], ["pis_rate", "PIS %"],
   ["cofins_rate", "COFINS %"], ["icms_cst", "ICMS CST"],
   ["icms_rate", "ICMS %"], ["icms_base_reduction_rate", "Redução da base ICMS %"],
   ["icms_origin", "Origem ICMS"], ["ipi_cst", "IPI CST"], ["pis_cst", "PIS CST"], ["cofins_cst", "COFINS CST"],
+  ["icms_deferment_rate", "Diferimento ICMS %"], ["icms_st_base_method", "Modalidade da base ST"],
+  ["icms_st_mva_rate", "MVA ST %"], ["icms_st_base_reduction_rate", "Redução base ST %"],
+  ["icms_st_rate", "Alíquota ST %"], ["icms_st_retained_base", "Base ST retida"],
+  ["icms_st_retained_rate", "Alíquota ST retida %"], ["icms_st_retained_value", "Valor ST retido"],
 ];
 const emptyItem = (): SimplifiedItem => ({
   reference: "", product_code: "", description: "", ncm: "", cfop: "", unit: "",
@@ -26,7 +35,8 @@ function Field({ label, value, onChange, placeholder }: { label: string; value: 
   return <label className="block min-w-0"><span className="field-label">{label}</span><input className="field-input" value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} /></label>;
 }
 
-export function ClientSimplifiedIssuance({ clientId }: { clientId: string }) {
+export function ClientSimplifiedIssuance({ client, onClientUpdated }: { client: ClientRecord; onClientUpdated: (client: ClientRecord) => void }) {
+  const clientId = client.id;
   const router = useRouter();
   const { data, error, isLoading, mutate } = useSWR<SimplifiedSaved>(routes.bff.client.simplifiedIssuance(clientId), bffFetcher);
   const [editing, setEditing] = useState<SimplifiedConfig | null>(null);
@@ -36,6 +46,9 @@ export function ClientSimplifiedIssuance({ clientId }: { clientId: string }) {
   const [issue, setIssue] = useState("");
   const [operation, setOperation] = useState<SimplifiedOperation>({ duimp_number: "", number: "", sign: false, duimp_overrides: {}, foreign_supplier: {}, additional_costs: {} });
   const [prepared, setPrepared] = useState<SimplifiedPreparation | null>(null);
+  const [importedClient, setImportedClient] = useState<Record<string, string> | null>(null);
+  const [importedProfile, setImportedProfile] = useState<Record<string, string> | null>(null);
+  const [existingProfile, setExistingProfile] = useState<ClientFiscalProfile | null>(null);
   const form = editing ?? data?.config ?? emptySimplifiedConfig();
 
   function section(section: "document" | "transport" | "additional_info" | "payment" | "volume", key: string, value: string) {
@@ -57,9 +70,16 @@ export function ClientSimplifiedIssuance({ clientId }: { clientId: string }) {
     setWorking(true); setIssue(""); setNotice("");
     try {
       const imported = await importSimplifiedWorkbook(file);
+      const normalizeCnpj = (text: string) => text.replace(/\D/g, "");
+      if (imported.client.cnpj && normalizeCnpj(imported.client.cnpj) !== normalizeCnpj(client.cnpj)) throw new Error("O CNPJ na aba Cliente não corresponde ao cliente aberto.");
+      if (imported.fiscalProfile.cnpj && normalizeCnpj(imported.fiscalProfile.cnpj) !== normalizeCnpj(client.cnpj)) throw new Error("O CNPJ do perfil fiscal difere do cliente aberto.");
+      const profile = Object.keys(imported.fiscalProfile).length ? await getClientFiscalProfile(clientId) : null;
+      setExistingProfile(profile);
+      setImportedClient(Object.keys(imported.client).length ? imported.client : null);
+      setImportedProfile(Object.keys(imported.fiscalProfile).length ? imported.fiscalProfile : null);
       setEditing(imported.config);
       setOperation(imported.operation);
-      setNotice(`${imported.config.items.length} produto(s) encontrados. Revise os códigos, tributos e transporte antes de salvar. Campos ausentes ficaram vazios.`);
+      setNotice(`${imported.config.items.length} produto(s) encontrados. Revise Cliente, Perfil fiscal, NF-e, Transporte, Produtos e ICMS antes de salvar. Campos vazios não apagam dados cadastrados.`);
     } catch (reason) { setIssue(reason instanceof Error ? reason.message : "Não foi possível ler a planilha."); }
     finally { setWorking(false); }
   }
@@ -67,11 +87,37 @@ export function ClientSimplifiedIssuance({ clientId }: { clientId: string }) {
   async function save() {
     setWorking(true); setIssue(""); setNotice("");
     try {
+      const normalizeCnpj = (text: string) => text.replace(/\D/g, "");
+      if (importedClient?.cnpj && normalizeCnpj(importedClient.cnpj) !== normalizeCnpj(client.cnpj)) throw new Error("O CNPJ revisado na aba Cliente não corresponde ao cliente aberto.");
+      if (importedProfile?.cnpj && normalizeCnpj(importedProfile.cnpj) !== normalizeCnpj(client.cnpj)) throw new Error("O CNPJ revisado no perfil fiscal não corresponde ao cliente aberto.");
+      if (importedProfile) {
+        const keys = ["legal_name", "trade_name", "cnpj", "state_registration", "tax_regime", "street", "number", "complement", "district", "city_code", "city_name", "state", "zip_code", "country_code", "country_name", "phone", "email"] as const;
+        const merged = Object.fromEntries(keys.map((key) => [key, importedProfile[key] || existingProfile?.[key] || (key === "cnpj" ? client.cnpj : key === "legal_name" ? client.razao_social : key === "country_code" ? "1058" : key === "country_name" ? "Brasil" : "")])) as Record<string, string>;
+        const required = ["legal_name", "cnpj", "tax_regime", "street", "number", "district", "city_code", "city_name", "state", "zip_code", "country_code", "country_name"];
+        const missing = required.filter((key) => !merged[key]);
+        if (missing.length) throw new Error(`Perfil fiscal incompleto: ${missing.join(", ")}. Preencha na revisão ou deixe a aba vazia para configurar depois.`);
+        if (normalizeCnpj(merged.cnpj) !== normalizeCnpj(client.cnpj)) throw new Error("O CNPJ do perfil fiscal não corresponde ao cliente aberto.");
+        const payload: UpsertClientFiscalProfilePayload = {
+          legal_name: merged.legal_name, trade_name: merged.trade_name || null, cnpj: merged.cnpj,
+          state_registration: merged.state_registration || null, tax_regime: merged.tax_regime as "1" | "2" | "3",
+          street: merged.street, number: merged.number, complement: merged.complement || null,
+          district: merged.district, city_code: merged.city_code.replace(/\D/g, ""), city_name: merged.city_name,
+          state: merged.state.toUpperCase(), zip_code: merged.zip_code.replace(/\D/g, ""),
+          country_code: merged.country_code, country_name: merged.country_name,
+          phone: merged.phone || null, email: merged.email || null, is_default: existingProfile?.is_default ?? true,
+        };
+        await upsertClientFiscalProfile(clientId, payload);
+      }
       const saved = await saveSimplifiedConfig(clientId, form);
+      if (importedClient) {
+        const patch = Object.fromEntries(Object.entries(importedClient).filter(([key, value]) => key !== "cnpj" && value.trim()).map(([key, value]) => [key, value])) as UpdateClientPayload;
+        if (Object.keys(patch).length) onClientUpdated(await updateClient(clientId, patch));
+      }
       setEditing(null);
+      setImportedClient(null); setImportedProfile(null);
       await mutate(saved, { revalidate: false });
       setNotice("Configuração salva. Cada nova emissão receberá uma cópia destes dados.");
-    } catch (reason) { setIssue(bffErrorMessage(reason)); }
+    } catch (reason) { setIssue(`Não foi possível concluir a gravação: ${bffErrorMessage(reason)}. Confira os dados antes de tentar novamente.`); }
     finally { setWorking(false); }
   }
 
@@ -124,6 +170,13 @@ export function ClientSimplifiedIssuance({ clientId }: { clientId: string }) {
       </div>
       {notice ? <p className="mt-5 rounded-xl bg-sage-soft p-4 text-sm text-sage-strong" role="status">{notice}</p> : null}
       {issue ? <p className="mt-5 text-sm text-destructive" role="alert">{issue}</p> : null}
+      {importedClient || importedProfile ? <div className="mt-6 space-y-3">
+        {([ ["Cliente", importedClient, setImportedClient], ["Perfil fiscal", importedProfile, setImportedProfile] ] as const).map(([tab, values, setter]) => values ? <details key={tab} className="rounded-xl border border-border p-4" open>
+          <summary className="cursor-pointer font-semibold">Revisar {tab.toLowerCase()} importado</summary>
+          <p className="mt-2 text-xs text-muted-foreground">Dados em branco preservam o cadastro atual. Atualização do perfil fiscal exige acesso de administrador.</p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">{fieldDefinitions[tab].map(({ label, description, key }) => <Field key={key} label={`${label} — ${description}`} value={values[key] ?? ""} onChange={(v) => setter({ ...values, [key]: v })} />)}</div>
+        </details> : null)}
+      </div> : null}
       {data?.config ? <div className="mt-6 rounded-xl border border-border p-5">
         <h3 className="font-semibold">Preparar XML desta operação</h3>
         <p className="mt-1 text-sm text-muted-foreground">Consulta a DUIMP, confere os itens e gera o XML quando os dados estiverem completos. Não transmite à SEFAZ.</p>
@@ -194,13 +247,14 @@ export function ClientSimplifiedIssuance({ clientId }: { clientId: string }) {
           <label><span className="field-label">Finalidade</span><select className="field-input" value={item.import_purpose} onChange={(e) => itemChange(index, "import_purpose", e.target.value)}>
             <option value="">Revisar no processo</option><option value="resale">Comercialização</option><option value="industrialization">Industrialização</option><option value="fixed_asset">Ativo imobilizado</option><option value="use_consumption">Uso ou consumo</option>
           </select></label>
-          {taxFields.map(([key, label]) => <Field key={key} label={label} value={item.tax_configuration[key] ?? ""} onChange={(v) => taxChange(index, key, v)} />)}
+          {taxFields.map(([key, label]) => <Field key={key} label={label} value={String(item.tax_configuration[key] ?? "")} onChange={(v) => taxChange(index, key, v)} />)}
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={item.tax_configuration.icms_tax_treatment_confirmed === true} onChange={(e) => { const items = [...form.items]; items[index] = { ...item, tax_configuration: { ...item.tax_configuration, icms_tax_treatment_confirmed: e.target.checked } }; setEditing({ ...form, items }); }} />Tratamento do ICMS confirmado pelo responsável fiscal (exige administrador)</label>
         </div>
         <button type="button" className="mt-5 inline-flex items-center gap-2 text-sm text-destructive" onClick={() => setEditing({ ...form, items: form.items.filter((_, i) => i !== index) })}><Trash2 size={15} /> Remover produto</button>
       </details>)}
       {!form.items.length ? <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">Importe uma planilha ou adicione produtos manualmente.</p> : null}</div>
       <div className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-border pt-5">
-        {editing ? <button type="button" className="button button-secondary" onClick={() => { setEditing(null); setNotice(""); }}>Descartar alterações</button> : null}
+        {editing ? <button type="button" className="button button-secondary" onClick={() => { setEditing(null); setImportedClient(null); setImportedProfile(null); setExistingProfile(null); setNotice(""); }}>Descartar alterações</button> : null}
         <button type="button" className="button button-primary" disabled={working || !form.items.length} onClick={save}>
           {working ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}
           {working ? "Salvando..." : "Salvar configuração"}
