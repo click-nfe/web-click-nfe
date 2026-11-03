@@ -22,7 +22,7 @@ function parseUpdatePayload(value: unknown): UpdateImportProcessPayload | null {
     !isObject(value) ||
     typeof value.duimp_number !== "string" ||
     !value.duimp_number.trim() ||
-    value.source !== "portal_unico"
+    !["portal_unico", "simplified"].includes(String(value.source))
   ) {
     return null;
   }
@@ -30,7 +30,7 @@ function parseUpdatePayload(value: unknown): UpdateImportProcessPayload | null {
   if (!/^[0-9]{2}BR[0-9]{11}$/.test(compact)) return null;
   return {
     duimp_number: `${compact.slice(0, -1)}-${compact.slice(-1)}`,
-    source: "portal_unico",
+    source: value.source as UpdateImportProcessPayload["source"],
   };
 }
 
