@@ -5,7 +5,7 @@ import type { ImportProcessRecord } from "@/lib/api/import-process";
 export type SimplifiedItem = {
   reference: string; product_code: string; description: string; ncm: string;
   cfop: string; unit: string; import_purpose: string;
-  tax_configuration: Record<string, string>;
+  tax_configuration: Record<string, string | boolean>;
 };
 export type SimplifiedConfig = {
   series?: string;
