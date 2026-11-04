@@ -325,6 +325,7 @@ export type SaveNfeItemClassificationsPayload = {
 
 export type NfeSharedCosts = {
   afrmm?: string;
+  tum?: string;
   siscomex_fee?: string;
   thc?: string;
   other?: string;

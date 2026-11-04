@@ -37,6 +37,7 @@ const purposeLabels: Record<ImportPurpose, string> = {
 
 const costFields = [
   { key: "afrmm", label: "AFRMM" },
+  { key: "tum", label: "TUM" },
   { key: "siscomex_fee", label: "Taxa Siscomex" },
   { key: "thc", label: "THC" },
   { key: "other", label: "Outras despesas" },
@@ -46,6 +47,7 @@ type CostValues = Record<(typeof costFields)[number]["key"], string>;
 
 const emptyCosts: CostValues = {
   afrmm: "",
+  tum: "",
   siscomex_fee: "",
   thc: "",
   other: "",

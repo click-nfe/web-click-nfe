@@ -215,6 +215,7 @@ function DuimpCategories({ snapshot }: { snapshot: DuimpSnapshotDetails }) {
             <Info key={name} label={name.replaceAll("_", " ").toUpperCase()} value={formatMoney(taxValue(value))} />
           ))}
           <Info label="AFRMM" value={formatMoney(normalized.afrmm_value)} />
+          <Info label="TUM" value={formatMoney(normalized.tum_value)} />
           <Info label="Taxa Siscomex" value={formatMoney(first(normalized, "siscomex_fee", "siscomex_fee_value"))} />
         </dl>
       </Category>

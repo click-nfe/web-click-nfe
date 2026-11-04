@@ -190,7 +190,7 @@ export async function importSimplifiedWorkbook(file: File): Promise<ImportedSimp
       else if (key === "sign") operation.sign = ["sim", "true", "1"].includes(data.toLowerCase());
       else if (key.startsWith("duimp_overrides.") && ["clearance_location", "clearance_state", "clearance_date", "transport_mode_code"].includes(key.split(".")[1])) operation.duimp_overrides[key.split(".")[1]] = data;
       else if (key.startsWith("foreign_supplier.") && ["name", "country_code", "country_name"].includes(key.split(".")[1])) operation.foreign_supplier[key.split(".")[1]] = data;
-      else if (key.startsWith("additional_costs.") && ["afrmm", "siscomex_fee", "thc", "other"].includes(key.split(".")[1])) operation.additional_costs[key.split(".")[1]] = rate(data);
+      else if (key.startsWith("additional_costs.") && ["afrmm", "tum", "siscomex_fee", "thc", "other"].includes(key.split(".")[1])) operation.additional_costs[key.split(".")[1]] = rate(data);
       else throw new Error(`Campo da operação desconhecido: ${key}`);
     }
   }
