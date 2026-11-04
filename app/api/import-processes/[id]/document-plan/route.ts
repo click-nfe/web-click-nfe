@@ -12,7 +12,7 @@ import { ACCESS_COOKIE } from "@/lib/auth-cookies";
 export const dynamic = "force-dynamic";
 
 type Context = { params: Promise<{ id: string }> };
-const costNames = ["afrmm", "siscomex_fee", "thc", "other"] as const;
+const costNames = ["afrmm", "tum", "siscomex_fee", "thc", "other"] as const;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);

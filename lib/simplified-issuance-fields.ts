@@ -72,6 +72,7 @@ const workbookFields: Record<string, Array<[string, string, string]>> = {
     ["Código BACEN do país do fornecedor", "Código do país estrangeiro, quando ausente da DUIMP.", "foreign_supplier.country_code"],
     ["País do fornecedor", "Nome do país estrangeiro, quando ausente da DUIMP.", "foreign_supplier.country_name"],
     ["AFRMM", "R$; não repita valores já incluídos na DUIMP.", "additional_costs.afrmm"],
+    ["TUM", "R$; taxa separada do AFRMM; não repita valores já incluídos na DUIMP.", "additional_costs.tum"],
     ["Taxa Siscomex", "R$; não repita valores já incluídos na DUIMP.", "additional_costs.siscomex_fee"],
     ["THC", "R$; não repita valores já incluídos na DUIMP.", "additional_costs.thc"],
     ["Outras despesas", "R$; confira composição e rateio.", "additional_costs.other"],

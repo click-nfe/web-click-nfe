@@ -98,6 +98,7 @@ type EditorState = {
   volumeNetWeight: string;
   volumeGrossWeight: string;
   afrmm: string;
+  tum: string;
   siscomexFee: string;
   thc: string;
   otherCost: string;
@@ -229,6 +230,7 @@ function editorState(detail: NfeDraftDetail): EditorState {
     volumeNetWeight: text(volume.net_weight),
     volumeGrossWeight: text(volume.gross_weight),
     afrmm: text(costs.afrmm),
+    tum: text(costs.tum),
     siscomexFee: text(costs.siscomex_fee),
     thc: text(costs.thc),
     otherCost: text(costs.other),
@@ -360,6 +362,7 @@ export function NfeDraftEditor({ processId, draftId }: { processId: string; draf
         },
         additional_costs: {
           afrmm: values.afrmm || "0",
+          tum: values.tum || "0",
           siscomex_fee: values.siscomexFee || "0",
           thc: values.thc || "0",
           other: values.otherCost || "0",
@@ -512,7 +515,7 @@ function TaxesTab({ values, setValue, setItem, issues }: { values: EditorState; 
 }
 
 function ImportTab({ values, setValue, setItem, issues, duimp }: { values: EditorState; setValue: SetValue; setItem: SetItem; issues: Issue[]; duimp: JsonObject }) {
-  return <TabSection title="Importação e despesas" description="Dados da DUIMP permanecem visíveis; despesas e identificadores de adição podem ser ajustados."><dl className="grid gap-4 rounded-2xl bg-muted/35 p-4 md:grid-cols-3"><Info label="Número da DUIMP" value={duimp.number} /><Info label="Registro" value={duimp.registration_date} /><Info label="Desembaraço" value={duimp.clearance_date} /><Info label="Local" value={duimp.clearance_location} /><Info label="UF" value={duimp.clearance_state} /><Info label="Via" value={duimp.transport_mode_code} /></dl><h3 className="mt-8 border-b border-border pb-2 font-semibold">Despesas compartilhadas</h3><div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-4"><MoneyField label="AFRMM" value={values.afrmm} onChange={(value) => setValue("afrmm", value)} paths={["additional_costs.afrmm"]} issues={issues} /><MoneyField label="Taxa Siscomex" value={values.siscomexFee} onChange={(value) => setValue("siscomexFee", value)} paths={["additional_costs.siscomex_fee"]} issues={issues} /><MoneyField label="THC" value={values.thc} onChange={(value) => setValue("thc", value)} paths={["additional_costs.thc"]} issues={issues} /><MoneyField label="Outras despesas" value={values.otherCost} onChange={(value) => setValue("otherCost", value)} paths={["additional_costs.other"]} issues={issues} /></div><h3 className="mt-8 border-b border-border pb-2 font-semibold">Itens da DUIMP</h3><p className="mt-2 text-sm text-muted-foreground">O número vem do item da DUIMP. Se estiver ausente, consulte o Portal Único e informe o valor correto; ele não será inferido pela posição do item na nota.</p><div className="mt-5 space-y-4">{values.items.map((item, index) => <div key={item.id} className="grid gap-5 rounded-2xl border border-border p-4 md:grid-cols-3"><p className="font-semibold md:col-span-3">Item {item.itemNumber} · {item.description}</p><Field label="Nº do item na DUIMP (nSeqAdic)" paths={[`items[${index + 1}].import_payload.sequence_number`]} issues={issues}><input className="field-input" inputMode="numeric" maxLength={5} value={item.sequenceNumber} onChange={(event) => setItem(index, { sequenceNumber: event.target.value.replace(/\D/g, "") })} /></Field><Field label="Código do fabricante" paths={[`items[${index + 1}].import_payload.manufacturer_code`]} issues={issues}><input className="field-input" value={item.manufacturerCode} onChange={(event) => setItem(index, { manufacturerCode: event.target.value })} /></Field></div>)}</div></TabSection>;
+  return <TabSection title="Importação e despesas" description="Dados da DUIMP permanecem visíveis; despesas e identificadores de adição podem ser ajustados."><dl className="grid gap-4 rounded-2xl bg-muted/35 p-4 md:grid-cols-3"><Info label="Número da DUIMP" value={duimp.number} /><Info label="Registro" value={duimp.registration_date} /><Info label="Desembaraço" value={duimp.clearance_date} /><Info label="Local" value={duimp.clearance_location} /><Info label="UF" value={duimp.clearance_state} /><Info label="Via" value={duimp.transport_mode_code} /></dl><h3 className="mt-8 border-b border-border pb-2 font-semibold">Despesas compartilhadas</h3><div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-5"><MoneyField label="AFRMM" value={values.afrmm} onChange={(value) => setValue("afrmm", value)} paths={["additional_costs.afrmm"]} issues={issues} /><MoneyField label="TUM" value={values.tum} onChange={(value) => setValue("tum", value)} paths={["additional_costs.tum"]} issues={issues} /><MoneyField label="Taxa Siscomex" value={values.siscomexFee} onChange={(value) => setValue("siscomexFee", value)} paths={["additional_costs.siscomex_fee"]} issues={issues} /><MoneyField label="THC" value={values.thc} onChange={(value) => setValue("thc", value)} paths={["additional_costs.thc"]} issues={issues} /><MoneyField label="Outras despesas" value={values.otherCost} onChange={(value) => setValue("otherCost", value)} paths={["additional_costs.other"]} issues={issues} /></div><h3 className="mt-8 border-b border-border pb-2 font-semibold">Itens da DUIMP</h3><p className="mt-2 text-sm text-muted-foreground">O número vem do item da DUIMP. Se estiver ausente, consulte o Portal Único e informe o valor correto; ele não será inferido pela posição do item na nota.</p><div className="mt-5 space-y-4">{values.items.map((item, index) => <div key={item.id} className="grid gap-5 rounded-2xl border border-border p-4 md:grid-cols-3"><p className="font-semibold md:col-span-3">Item {item.itemNumber} · {item.description}</p><Field label="Nº do item na DUIMP (nSeqAdic)" paths={[`items[${index + 1}].import_payload.sequence_number`]} issues={issues}><input className="field-input" inputMode="numeric" maxLength={5} value={item.sequenceNumber} onChange={(event) => setItem(index, { sequenceNumber: event.target.value.replace(/\D/g, "") })} /></Field><Field label="Código do fabricante" paths={[`items[${index + 1}].import_payload.manufacturer_code`]} issues={issues}><input className="field-input" value={item.manufacturerCode} onChange={(event) => setItem(index, { manufacturerCode: event.target.value })} /></Field></div>)}</div></TabSection>;
 }
 
 function TransportTab({ values, setValue, issues }: { values: EditorState; setValue: SetValue; issues: Issue[] }) {

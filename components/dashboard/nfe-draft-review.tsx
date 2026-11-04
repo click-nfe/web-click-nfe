@@ -339,7 +339,7 @@ function DraftDetails({ detail }: { detail: NfeDraftDetail }) {
       </ReviewSection>
 
       <ReviewSection title="Custos adicionais">
-        <InfoGrid fields={[["AFRMM", formatMoney(costs.afrmm)], ["Taxa Siscomex", formatMoney(costs.siscomex_fee)], ["THC", formatMoney(costs.thc)], ["Outras despesas", formatMoney(costs.other)]]} />
+        <InfoGrid fields={[["AFRMM", formatMoney(costs.afrmm)], ["TUM", formatMoney(costs.tum)], ["Taxa Siscomex", formatMoney(costs.siscomex_fee)], ["THC", formatMoney(costs.thc)], ["Outras despesas", formatMoney(costs.other)]]} />
       </ReviewSection>
 
       <ReviewSection title={`Itens (${detail.items.length})`}>
