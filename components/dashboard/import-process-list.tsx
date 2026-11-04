@@ -24,7 +24,6 @@ import {
   formatProcessDate,
   importProcessStatusClass,
   importProcessStatusLabels,
-  nextActionLabels,
 } from "@/lib/import-process-display";
 
 const PAGE_SIZE = 10;
@@ -142,14 +141,13 @@ export function ImportProcessList() {
           </div>
         ) : data?.items.length ? (
           <div className="overflow-x-auto" aria-busy={isLoading}>
-            <table className="w-full min-w-[880px] text-left text-sm">
+            <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="bg-muted/55 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-6 py-4 font-semibold">Processo</th>
                   <th className="px-6 py-4 font-semibold">Cliente</th>
                   <th className="px-6 py-4 font-semibold">DUIMP</th>
                   <th className="px-6 py-4 font-semibold">Status</th>
-                  <th className="px-6 py-4 font-semibold">Próxima etapa</th>
                   <th className="px-6 py-4 font-semibold">Atualizado</th>
                 </tr>
               </thead>
@@ -170,7 +168,6 @@ export function ImportProcessList() {
                         {importProcessStatusLabels[process.status]}
                       </span>
                     </td>
-                    <td className="max-w-56 px-6 py-5 text-muted-foreground">{nextActionLabels[process.next_action] ?? process.next_action}</td>
                     <td className="whitespace-nowrap px-6 py-5 text-xs text-muted-foreground">
                       <time dateTime={process.updated_at}>{formatProcessDate(process.updated_at)}</time>
                     </td>

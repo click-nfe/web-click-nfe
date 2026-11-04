@@ -2,7 +2,7 @@ import axios from "axios";
 
 /** Cliente same-origin usado pelo navegador; os cookies HttpOnly seguem seguros. */
 export const bffClient = axios.create({
-  timeout: 35_000,
+  timeout: 55_000,
   headers: { Accept: "application/json" },
   transitional: { clarifyTimeoutError: true },
 });
