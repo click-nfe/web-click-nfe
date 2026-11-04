@@ -38,42 +38,22 @@ export type ImportProcessListParams = {
   offset?: number;
 };
 
-export type ImportProcessSummary = {
+export type ImportProcessListItem = {
   id: string;
-  organization_id: string;
-  importer_id: string;
   reference_code: string;
   duimp_number: string | null;
-  duimp_version: string | null;
   status: ImportProcessStatus;
   source: string;
-  created_by_user_id: string | null;
-  created_by_me: boolean;
-  has_fiscal_profile: boolean;
-  snapshots_count: number;
-  latest_draft_id: string | null;
-  latest_draft_status: string | null;
-  items_count: number;
-  created_at: string;
   updated_at: string;
   importer: {
     id: string;
     name: string;
-    legal_name: string;
     cnpj: string;
   };
-  next_action: string;
-  pending: boolean;
-  planned_documents_count: number;
-  last_responsible: {
-    id: string;
-    name: string;
-    is_current_user: boolean;
-  } | null;
 };
 
 export type ImportProcessListResponse = {
-  items: ImportProcessSummary[];
+  items: ImportProcessListItem[];
   total: number;
   status: ImportProcessStatus | null;
   source: string | null;
@@ -660,7 +640,7 @@ export async function listImportProcesses(
 ) {
   const config: AxiosRequestConfig = {
     ...bearerConfig(accessToken),
-    params: toBackendParams(params),
+    params: { ...toBackendParams(params), compact: true },
   };
   const response = await apiClient.get<ImportProcessListResponse>(
     routes.backend.importProcess.list,

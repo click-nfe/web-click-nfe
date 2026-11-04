@@ -24,7 +24,6 @@ import {
   formatProcessDate,
   importProcessStatusClass,
   importProcessStatusLabels,
-  nextActionLabels,
 } from "@/lib/import-process-display";
 
 type Metric = {
@@ -149,7 +148,7 @@ export function DashboardOverview() {
                       {importProcessStatusLabels[process.status]}
                     </span>
                   </div>
-                  <p className="mt-1 truncate text-sm text-muted-foreground">{process.importer.name} · {nextActionLabels[process.next_action] ?? process.next_action}</p>
+                  <p className="mt-1 truncate text-sm text-muted-foreground">{process.importer.name}</p>
                 </div>
                 <span className="flex items-center gap-3 text-xs text-muted-foreground"><time dateTime={process.updated_at}>{formatProcessDate(process.updated_at)}</time><ArrowRight size={16} aria-hidden="true" /></span>
               </Link>
