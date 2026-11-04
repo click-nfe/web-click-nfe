@@ -71,12 +71,14 @@ export function NfeDocumentPlanPanel({
   clientId,
   snapshotId,
   requiresRebuild = false,
+  onConfigureSequence,
   onWorkflowChange,
 }: {
   processId: string;
   clientId: string;
   snapshotId: string;
   requiresRebuild?: boolean;
+  onConfigureSequence: (series: string) => void;
   onWorkflowChange: () => Promise<unknown>;
 }) {
   const url = nfeDocumentPlanUrl(processId, snapshotId);
@@ -189,6 +191,7 @@ export function NfeDocumentPlanPanel({
           clientId={clientId}
           snapshotId={snapshotId}
           plan={plan}
+          onConfigureSequence={onConfigureSequence}
           onPlanChange={async (nextPlan) => {
             await mutate(
               { process_id: processId, snapshot_id: snapshotId, plan: nextPlan },
