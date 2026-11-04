@@ -26,6 +26,7 @@ import { NfeNumberSequenceSheet } from "@/components/dashboard/nfe-number-sequen
 import { SimplifiedReconciliation } from "@/components/dashboard/simplified-reconciliation";
 import type { ClientRecord } from "@/lib/api/client-record";
 import type { ImportProcessRecord, NfeWorkflowState } from "@/lib/api/import-process";
+import type { NfeNumberSequence } from "@/lib/api/nfe-number-sequence";
 import { routes } from "@/lib/api/routes";
 import { bffErrorMessage, bffFetcher } from "@/lib/bff/client";
 import { fetchProcessDuimp, updateImportProcess } from "@/lib/bff/import-process";
@@ -53,9 +54,11 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
   const clientId = processRequest.data?.importer_id;
   const clientRequest = useSWR<ClientRecord>(clientId ? routes.bff.client.detail(clientId) : null, bffFetcher);
   const readiness = useClientIssuanceReadiness(clientId);
+  const sequencesRequest = useSWR<NfeNumberSequence[]>(clientId ? routes.bff.client.nfeNumberSequences(clientId) : null, bffFetcher);
   const { data: portalAvailability } = usePortalUnicoAvailability();
   const portalUnavailable = portalAvailability?.state === "unavailable";
   const [sequenceSheetOpen, setSequenceSheetOpen] = useState(false);
+  const [sequenceSeries, setSequenceSeries] = useState<string | null>(null);
   const [duimpNumber, setDuimpNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +136,7 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
         <section id="nfe-cliente" className="surface-card mt-8 scroll-mt-56 lg:scroll-mt-40">
           <NfeSectionHeader step={1} title="Cliente e configuração" summary={client?.nome_resumido || client?.razao_social || "Perfil fiscal do emitente"} />
           {clientId && !hasSnapshot ? (
-            <ClientIssuanceReadinessPanel clientId={clientId} readiness={readiness} onConfigureSequence={() => setSequenceSheetOpen(true)} />
+            <ClientIssuanceReadinessPanel clientId={clientId} readiness={readiness} onConfigureSequence={() => { setSequenceSeries(null); setSequenceSheetOpen(true); }} />
           ) : (
             <div className="p-5 text-sm text-muted-foreground sm:p-6">
               {client ? `${client.nome_resumido || client.razao_social} · ${formatCnpj(client.cnpj)}` : "Carregando cliente..."}
@@ -213,6 +216,7 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
           clientId={clientId}
           snapshotId={workflow.latest_snapshot.id}
           requiresRebuild={workflow.next_action === "create_document_plan" && workflow.prerequisites.has_document_plan}
+          onConfigureSequence={(series) => { setSequenceSeries(series); setSequenceSheetOpen(true); }}
           onWorkflowChange={() => workflowRequest.mutate()}
         />
       ) : null}
@@ -223,9 +227,13 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
           open={sequenceSheetOpen}
           onOpenChange={setSequenceSheetOpen}
           clientId={clientId}
-          sequence={readiness.activeSequence}
+          defaultSeries={sequenceSeries ?? undefined}
+          sequence={sequenceSeries
+            ? sequencesRequest.data?.find((item) => item.environment === "production" && item.model === "55" && item.series === sequenceSeries)
+            : readiness.activeSequence}
           onSaved={async (sequence) => {
             await readiness.setSequence(sequence);
+            await sequencesRequest.mutate();
             await workflowRequest.mutate();
           }}
         />

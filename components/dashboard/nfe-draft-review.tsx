@@ -82,6 +82,7 @@ export function NfeDraftReviewPanel({
   plan,
   onPlanChange,
   onPlanRefresh,
+  onConfigureSequence,
   onWorkflowChange,
 }: {
   processId: string;
@@ -90,6 +91,7 @@ export function NfeDraftReviewPanel({
   plan: NfeDocumentPlan;
   onPlanChange: (plan: NfeDocumentPlan) => Promise<unknown>;
   onPlanRefresh: () => Promise<unknown>;
+  onConfigureSequence: (series: string) => void;
   onWorkflowChange: () => Promise<unknown>;
 }) {
   const [generating, setGenerating] = useState(false);
@@ -192,6 +194,7 @@ export function NfeDraftReviewPanel({
         processId={processId}
         snapshotId={snapshotId}
         plan={plan}
+        onConfigureSequence={onConfigureSequence}
         onPlanChange={onPlanChange}
         onWorkflowChange={onWorkflowChange}
       />

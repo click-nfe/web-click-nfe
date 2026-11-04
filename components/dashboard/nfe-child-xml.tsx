@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, Download, FileCode2, LoaderCircle, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, FileCode2, Hash, LoaderCircle, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import { NfeSectionHeader } from "@/components/dashboard/nfe-section-header";
 
@@ -33,12 +33,14 @@ export function NfeChildXmlPanel({
   processId,
   snapshotId,
   plan,
+  onConfigureSequence,
   onPlanChange,
   onWorkflowChange,
 }: {
   processId: string;
   snapshotId: string;
   plan: NfeDocumentPlan;
+  onConfigureSequence: (series: string) => void;
   onPlanChange: (plan: NfeDocumentPlan) => Promise<unknown>;
   onWorkflowChange: () => Promise<unknown>;
 }) {
@@ -120,6 +122,14 @@ export function NfeChildXmlPanel({
                 <span>{!xml ? "XML pendente" : !current ? "XML desatualizado após edição do rascunho" : valid ? "XML não assinado válido no XSD" : xml.xsd_valid === false ? "XML reprovado no XSD" : "Validação XSD pendente"}</span>
               </div>
               {result?.message ? <p className="mt-3 text-sm text-destructive" role="alert">{result.message}</p> : null}
+              {draft && !draft.number ? (
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm text-muted-foreground">Para gerar o XML desta nota, configure a sequência da série {draft.series} para este cliente. Depois, clique novamente em “Gerar e validar XMLs”.</p>
+                  <button type="button" className="button button-secondary" onClick={() => onConfigureSequence(draft.series)}>
+                    <Hash size={16} /> Configurar numeração · série {draft.series}
+                  </button>
+                </div>
+              ) : null}
               {xsdErrors.length ? (
                 <ul className="mt-3 space-y-1 text-sm text-destructive">
                   {xsdErrors.map((issue, index) => <li key={index}>{issue.line ? `Linha ${issue.line}: ` : ""}{issue.message ?? "Erro de validação XSD"}</li>)}

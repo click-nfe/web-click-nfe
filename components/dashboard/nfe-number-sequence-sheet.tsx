@@ -13,12 +13,14 @@ export function NfeNumberSequenceSheet({
   open,
   onOpenChange,
   clientId,
+  defaultSeries,
   sequence,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clientId: string;
+  defaultSeries?: string;
   sequence?: NfeNumberSequence;
   onSaved: (sequence: NfeNumberSequence) => void | Promise<void>;
 }) {
@@ -32,6 +34,7 @@ export function NfeNumberSequenceSheet({
       {open ? (
         <NfeNumberSequenceForm
           clientId={clientId}
+          defaultSeries={defaultSeries}
           sequence={sequence}
           onCancel={() => onOpenChange(false)}
           onSaved={async (saved) => {
@@ -46,17 +49,19 @@ export function NfeNumberSequenceSheet({
 
 function NfeNumberSequenceForm({
   clientId,
+  defaultSeries,
   sequence,
   onCancel,
   onSaved,
 }: {
   clientId: string;
+  defaultSeries?: string;
   sequence?: NfeNumberSequence;
   onCancel: () => void;
   onSaved: (sequence: NfeNumberSequence) => void | Promise<void>;
 }) {
   const { user } = useDashboardSession();
-  const [series, setSeries] = useState(sequence?.series ?? "1");
+  const [series, setSeries] = useState(sequence?.series ?? defaultSeries ?? "1");
   const [initialNumber, setInitialNumber] = useState(String(sequence?.initial_number ?? 1));
   const [maxNumber, setMaxNumber] = useState(String(sequence?.max_number ?? 999999999));
   const [saving, setSaving] = useState(false);
