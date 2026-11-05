@@ -26,7 +26,7 @@ import { ClientForm } from "@/components/dashboard/client-form";
 import { ClientCertificates } from "@/components/dashboard/client-certificates";
 import { ClientFiscalProfileSection } from "@/components/dashboard/client-fiscal-profile-form";
 import { ClientTaxRules } from "@/components/dashboard/client-tax-rules";
-import { ClientSimplifiedIssuance } from "@/components/dashboard/client-simplified-issuance";
+import { ClientSimplifiedTemplates } from "@/components/dashboard/client-simplified-templates";
 import { Sheet } from "@/components/ui/sheet";
 import type { ClientRecord } from "@/lib/api/client-record";
 import type { ImportProcessListResponse } from "@/lib/api/import-process";
@@ -533,7 +533,7 @@ export function ClientProfile({
       ) : null}
       {section === "certificates" ? <ClientCertificates clientId={client.id} /> : null}
       {section === "tax-rules" ? <ClientTaxRules client={client} /> : null}
-      {section === "simplified-issuance" ? <ClientSimplifiedIssuance client={client} onClientUpdated={(updated) => mutate(updated, { revalidate: false })} /> : null}
+      {section === "simplified-issuance" ? <ClientSimplifiedTemplates clientId={client.id} /> : null}
       {section === "fiscal-profile" ? (
         <ClientFiscalProfileSection client={client} />
       ) : null}

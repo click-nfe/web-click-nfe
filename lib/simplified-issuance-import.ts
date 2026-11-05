@@ -10,7 +10,10 @@ type Rows = Cell[][];
 const value = (cell: Cell) => String(cell ?? "").trim();
 const digits = (cell: Cell) => value(cell).replace(/\D/g, "");
 const rate = (cell: Cell) => value(cell).replace(",", ".");
-export type ImportedSimplifiedWorkbook = { config: SimplifiedConfig; operation: SimplifiedOperation; client: Record<string, string>; fiscalProfile: Record<string, string> };
+export type ImportedSimplifiedWorkbook = { config: SimplifiedConfig; operation: SimplifiedOperation; manualPayload?: Record<string, unknown>; client: Record<string, string>; fiscalProfile: Record<string, string> };
+const operationItemKeys = ["number", "reference", "description", "ncm", "unit", "quantity", "product_value", "unit_value", "freight_value", "insurance_value", "exporter_code"];
+const operationItemLabels = ["Nº item DUIMP", "Código do Produto", "Descrição", "NCM", "Unidade", "Quantidade", "Valor produto (R$)", "Valor unitário (R$)", "Frete (R$)", "Seguro (R$)", "Código do exportador"];
+const operationItemHelp = ["Número real do item na DUIMP (nSeqAdic); preencha manualmente, sem presumir pela posição na nota.", "Mesma referência usada no modelo e na DUIMP.", "Descrição da mercadoria.", "Oito dígitos.", "Ex.: UN.", "Quantidade positiva.", "Valor total positivo.", "Valor unitário positivo.", "Opcional; não inclua no produto.", "Opcional; não inclua no produto.", "Identificador do exportador desta linha."];
 const productKeys = ["reference", "product_code", "description", "ncm", "cfop", "unit", "import_purpose", "ii_rate", "ipi_rate", "pis_rate", "cofins_rate", "ipi_cst", "pis_cst", "cofins_cst"];
 const icmsKeys = ["reference", "ncm", "icms_origin", "icms_cst", "icms_rate", "icms_base_reduction_rate", "icms_deferment_rate", "icms_st_base_method", "icms_st_mva_rate", "icms_st_base_reduction_rate", "icms_st_rate", "icms_st_retained_base", "icms_st_retained_rate", "icms_st_retained_value", "icms_tax_treatment_confirmed"];
 const productLabels = ["Referência no catálogo", "Código na NF-e", "Descrição do produto", "NCM", "CFOP", "Unidade", "Finalidade", "II %", "IPI %", "PIS %", "COFINS %", "IPI CST", "PIS CST", "COFINS CST"];
@@ -22,12 +25,17 @@ function structuredRows(rows: Rows, tab: string) {
   if (value(rows[0]?.[0]) !== "Nome do campo" || value(rows[0]?.[1]) !== "Descrição" || value(rows[0]?.[2]) !== "Valor" || value(rows[0]?.[3]) !== "Chave interna — não alterar") throw new Error(`Cabeçalho da aba ${tab} inválido.`);
   const result: Record<string, string> = {};
   const definitions = fieldDefinitions[tab];
-  for (let index = 0; index < definitions.length; index++) {
-    const row = rows[index + 1] || [];
-    if (value(row[3]) !== definitions[index].key) throw new Error(`Chave interna alterada na aba ${tab}, linha ${index + 2}. Baixe um novo modelo.`);
-    if (value(row[2])) result[definitions[index].key] = value(row[2]);
-  }
-  if (rows.slice(definitions.length + 1).some(row => row.some(cell => value(cell)))) throw new Error(`Linhas adicionais na aba ${tab} não são aceitas.`);
+  const allowed = new Set(definitions.map(field => field.key));
+  const seen = new Set<string>();
+  rows.slice(1).forEach((row, index) => {
+    if (!row.some(cell => value(cell))) return;
+    const key = value(row[3]);
+    if (!allowed.has(key) || seen.has(key)) throw new Error(`Chave interna alterada ou repetida na aba ${tab}, linha ${index + 2}. Baixe um novo modelo.`);
+    seen.add(key);
+    if (value(row[2])) result[key] = value(row[2]);
+  });
+  const optional = new Set(["consult_portal", "registration_date"]);
+  if (definitions.some(field => !optional.has(field.key) && !seen.has(field.key))) throw new Error(`Campos ausentes na aba ${tab}. Baixe um novo modelo.`);
   return result;
 }
 
@@ -41,6 +49,7 @@ function tabularRows(rows: Rows, tab: string, keys: string[]) {
 
 function purpose(valueText: string) {
   const normalized = valueText.toLocaleLowerCase("pt-BR");
+  if (["resale", "industrialization", "fixed_asset", "use_consumption"].includes(normalized)) return normalized;
   if (normalized.includes("industrial")) return "industrialization";
   if (normalized.includes("revenda") || normalized.includes("comercial")) return "resale";
   if (normalized.includes("ativo")) return "fixed_asset";
@@ -94,6 +103,10 @@ export async function importSimplifiedWorkbook(file: File): Promise<ImportedSimp
     const note = structuredRows(sheet("Nota fiscal"), "Nota fiscal");
     const transport = structuredRows(sheet("Transporte"), "Transporte");
     const operationValues = structuredRows(operationRows, "Operação");
+    const plan = workbook.Sheets["Plano de notas"] ? structuredRows(sheet("Plano de notas"), "Plano de notas") : {};
+    if (plan.grouping && plan.grouping !== "Por exportador") throw new Error("O plano atual aceita agrupamento por exportador. Ajuste a distribuição no processo.");
+    const consultPortalText = (operationValues.consult_portal || "Sim").toLowerCase();
+    if (!["sim", "não", "nao"].includes(consultPortalText)) throw new Error("Use Sim ou Não em Consultar Portal Único.");
     const items = tabularRows(sheet("Produtos"), "Produtos", productKeys).map(row => ({
       reference: row.reference, product_code: row.product_code, description: row.description,
       ncm: digits(row.ncm), cfop: digits(row.cfop), unit: row.unit, import_purpose: purpose(row.import_purpose),
@@ -129,13 +142,39 @@ export async function importSimplifiedWorkbook(file: File): Promise<ImportedSimp
       if (!part || !field || !["document", "transport", "volume", "payment", "additional_info"].includes(part)) throw new Error(`Campo não reconhecido: ${key}.`);
       (config[part as "document" | "transport" | "volume" | "payment" | "additional_info"] as Record<string, string>)[field] = data;
     }
-    const operation: SimplifiedOperation = { duimp_number: operationValues.duimp_number || "", number: operationValues.number || "", sign: operationValues.sign?.toLowerCase() === "sim", duimp_overrides: {}, foreign_supplier: {}, additional_costs: {} };
+    const operation: SimplifiedOperation = { duimp_number: operationValues.duimp_number || "", number: operationValues.number || "", sign: operationValues.sign?.toLowerCase() === "sim", consult_portal: consultPortalText === "sim", registration_date: operationValues.registration_date || "", duimp_overrides: {}, foreign_supplier: {}, additional_costs: {} };
     if (operationValues.sign && !["sim", "não", "nao"].includes(operationValues.sign.toLowerCase())) throw new Error("Use Sim ou Não em Assinar XML.");
     for (const [key, data] of Object.entries(operationValues)) {
       const [part, field] = key.split(".");
       if (["duimp_overrides", "foreign_supplier", "additional_costs"].includes(part) && field) operation[part as "duimp_overrides" | "foreign_supplier" | "additional_costs"][field] = part === "additional_costs" ? rate(data) : data;
     }
-    return { config, operation, client, fiscalProfile };
+    let manualPayload: Record<string, unknown> | undefined;
+    if (!operation.consult_portal) {
+      const manualItems = tabularRows(sheet("Itens da operação"), "Itens da operação", operationItemKeys);
+      if (!manualItems.length) throw new Error("Preencha a aba Itens da operação para não consultar o Portal Único.");
+      if (!operation.registration_date || !/^\d{4}-\d{2}-\d{2}$/.test(operation.registration_date) || !operation.duimp_overrides.clearance_date || !/^\d{4}-\d{2}-\d{2}$/.test(operation.duimp_overrides.clearance_date)) throw new Error("Informe as datas de registro e desembaraço no formato AAAA-MM-DD.");
+      if (!operation.duimp_overrides.clearance_location || !/^[A-Za-z]{2}$/.test(operation.duimp_overrides.clearance_state || "") || !/^\d+$/.test(operation.duimp_overrides.transport_mode_code || "")) throw new Error("Informe local, UF e via de transporte na aba Operação.");
+      if (!operation.foreign_supplier.name || !operation.foreign_supplier.country_code || !operation.foreign_supplier.country_name) throw new Error("Informe nome, código e nome do país do fornecedor na aba Operação.");
+      const byProduct = new Map(items.map(item => [`${item.reference.toLowerCase()}|${item.ncm}`, item]));
+      const numbers = new Set<number>();
+      const rawItems = manualItems.map((row, index) => {
+        if (!byProduct.has(`${row.reference.toLowerCase()}|${digits(row.ncm)}`)) throw new Error(`O item ${index + 1} da operação não corresponde a Produtos/ICMS.`);
+        const itemNumber = Number(row.number);
+        if (!/^\d{1,5}$/.test(row.number) || !Number.isInteger(itemNumber) || itemNumber < 1 || itemNumber > 99999 || numbers.has(itemNumber)) throw new Error(`Informe o número real e único do item ${index + 1} na DUIMP, de 1 a 99999.`);
+        numbers.add(itemNumber);
+        if (!row.description || !row.unit || !row.quantity || !row.product_value || !row.unit_value || !row.exporter_code) throw new Error(`Complete descrição, unidade, quantidade, valores e exportador do item ${index + 1} da operação.`);
+        for (const key of ["quantity", "product_value", "unit_value", "freight_value", "insurance_value"]) {
+          const amount = row[key] ? Number(rate(row[key])) : 0;
+          if (!Number.isFinite(amount) || amount < 0 || (["quantity", "product_value", "unit_value"].includes(key) && amount === 0)) throw new Error(`Valor inválido em ${key} do item ${index + 1}.`);
+        }
+        return { numeroItem: String(itemNumber), codigoProduto: row.reference, descricao: row.description, ncm: digits(row.ncm), unidade: row.unit, quantidade: rate(row.quantity), valorProduto: rate(row.product_value), valorUnitario: rate(row.unit_value), valorFrete: rate(row.freight_value) || "0", valorSeguro: rate(row.insurance_value) || "0", codigoExportador: row.exporter_code, sequenciaAdicao: String(itemNumber) };
+      });
+      manualPayload = { numero: operation.duimp_number, dataRegistro: operation.registration_date,
+        localDesembaraco: operation.duimp_overrides.clearance_location, ufDesembaraco: operation.duimp_overrides.clearance_state,
+        dataDesembaraco: operation.duimp_overrides.clearance_date, viaTransporteCodigo: operation.duimp_overrides.transport_mode_code,
+        fornecedorEstrangeiro: { name: operation.foreign_supplier.name, country_code: operation.foreign_supplier.country_code, country_name: operation.foreign_supplier.country_name }, itens: rawItems };
+    }
+    return { config, operation, manualPayload, client, fiscalProfile };
   }
   let items: SimplifiedItem[];
   let source: Rows;
@@ -179,7 +218,7 @@ export async function importSimplifiedWorkbook(file: File): Promise<ImportedSimp
       (config[section as "document" | "transport" | "payment" | "volume" | "additional_info"] as Record<string, string>)[field] = value(row[1]);
     }
   }
-  const operation: SimplifiedOperation = { duimp_number: "", number: "", sign: false, duimp_overrides: {}, foreign_supplier: {}, additional_costs: {} };
+  const operation: SimplifiedOperation = { duimp_number: "", number: "", sign: false, consult_portal: true, duimp_overrides: {}, foreign_supplier: {}, additional_costs: {} };
   if (operationRows.length) {
     if (value(operationRows[0]?.[0]) !== "Campo" || value(operationRows[0]?.[1]) !== "Valor") throw new Error("Cabeçalho da aba Operação inválido.");
     for (const row of operationRows.slice(1)) {
@@ -188,6 +227,8 @@ export async function importSimplifiedWorkbook(file: File): Promise<ImportedSimp
       if (key === "duimp_number") operation.duimp_number = data;
       else if (key === "number") operation.number = data;
       else if (key === "sign") operation.sign = ["sim", "true", "1"].includes(data.toLowerCase());
+      else if (key === "consult_portal") operation.consult_portal = !["não", "nao", "false", "0"].includes(data.toLowerCase());
+      else if (key === "registration_date") operation.registration_date = data;
       else if (key.startsWith("duimp_overrides.") && ["clearance_location", "clearance_state", "clearance_date", "transport_mode_code"].includes(key.split(".")[1])) operation.duimp_overrides[key.split(".")[1]] = data;
       else if (key.startsWith("foreign_supplier.") && ["name", "country_code", "country_name"].includes(key.split(".")[1])) operation.foreign_supplier[key.split(".")[1]] = data;
       else if (key.startsWith("additional_costs.") && ["afrmm", "tum", "siscomex_fee", "thc", "other"].includes(key.split(".")[1])) operation.additional_costs[key.split(".")[1]] = rate(data);
@@ -197,7 +238,7 @@ export async function importSimplifiedWorkbook(file: File): Promise<ImportedSimp
   return { config, operation, client: {}, fiscalProfile: {} };
 }
 
-export async function downloadSimplifiedWorkbook() {
+export async function downloadSimplifiedWorkbook(prefill?: SimplifiedConfig, operation?: Partial<SimplifiedOperation>, client?: Record<string, unknown>, fiscalProfile?: Record<string, unknown>) {
   const { utils, writeFile } = await import("xlsx");
   const workbook = utils.book_new();
   const guide = utils.aoa_to_sheet([
@@ -206,8 +247,9 @@ export async function downloadSimplifiedWorkbook() {
     ["1. Cliente e perfil fiscal", "Confira o CNPJ do cliente já cadastrado. O perfil fiscal deve conter os dados completos do emitente. Campos vazios não apagam dados existentes."],
     ["2. Nota fiscal e transporte", "Preencha apenas padrões recorrentes. Volumes e pagamentos variáveis devem ser revisados em cada operação."],
     ["3. Produtos e ICMS", "Uma linha por produto em cada aba. Use a mesma Referência e NCM nas duas. Complete CFOP, finalidade, origem, CST e alíquota; confira reduções e outras regras com o responsável fiscal."],
-    ["4. Operação", "Informe a DUIMP. Número da NF-e e assinatura são opcionais. Não copie valores do rascunho sem conferir se já vieram da DUIMP."],
-    ["5. Upload", "Na aba Emissão simplificada do cliente, importe o arquivo, revise os campos preenchidos e salve. Depois use Preparar XML e resolva as pendências apontadas."],
+    ["4. Operação", "Informe a DUIMP. Sem consulta ao Portal, preencha registro, desembaraço, via de transporte, fornecedor com país e os números reais dos itens da DUIMP, quantidades e valores na aba Itens da operação."],
+    ["Plano de notas", "O plano atual agrupa por exportador; um número manual só é aceito quando o plano contém uma nota. Ajustes de distribuição entre notas são feitos no processo."],
+    ["5. Upload", "No cadastro do modelo, revise os campos e salve. Para emitir, acesse Novo processo, selecione cliente e modelo, importe a planilha desta operação e confira o resultado."],
     ["Estrutura", "Nas abas de campos, edite somente Valor. A chave técnica fica na coluna final oculta. Em Produtos e ICMS, a terceira linha de chaves fica oculta. Não altere nem exclua as chaves; o upload confere sua integridade."],
     ["Resultado", "O XML só é gerado após conferir os dados exigidos. Assinatura requer certificado ativo e confirmação fiscal; este fluxo não transmite à SEFAZ."],
     ["Abas", "Cliente: cadastro; Perfil fiscal: emitente; Nota fiscal: padrões da NF-e; Transporte: frete/volumes; Produtos: mercadorias e tributos federais; ICMS: valores por referência/NCM nesta configuração; Operação: dados variáveis."],
@@ -216,20 +258,30 @@ export async function downloadSimplifiedWorkbook() {
   guide["!cols"] = [{ wch: 30 }, { wch: 125 }];
   utils.book_append_sheet(workbook, guide, "Leia-me");
   for (const [tab, definitions] of Object.entries(fieldDefinitions)) {
-    const rows = [["Nome do campo", "Descrição", "Valor", "Chave interna — não alterar"], ...definitions.map(({ label, description, key }) => [label, description, key === "sign" ? "Não" : "", key])];
+    const rows = [["Nome do campo", "Descrição", "Valor", "Chave interna — não alterar"], ...definitions.map(({ label, description, key }) => {
+      const source = tab === "Operação" ? operation : tab === "Cliente" ? client : tab === "Perfil fiscal" ? fiscalProfile : prefill;
+      const [part, field] = key.split(".");
+      const filled = source && (field ? (source as unknown as Record<string, Record<string, string>>)[part]?.[field] : (source as unknown as Record<string, string | boolean>)[key]);
+      return [label, description, filled === true ? "Sim" : filled === false ? "Não" : filled ?? (key === "sign" ? "Não" : key === "consult_portal" ? "Sim" : key === "grouping" ? "Por exportador" : ""), key];
+    })];
     const sheet = utils.aoa_to_sheet(rows);
     sheet["!cols"] = [{ wch: 39 }, { wch: 84 }, { wch: 38 }, { hidden: true }];
     utils.book_append_sheet(workbook, sheet, tab);
   }
-  const productRows = [productLabels, productHelp, productKeys];
+  const productRows = [productLabels, productHelp, productKeys, ...(prefill?.items ?? []).map(item => productKeys.map(key => key in item ? (item as unknown as Record<string, string>)[key] : String(item.tax_configuration[key] ?? "")))];
   const productSheet = utils.aoa_to_sheet(productRows);
   productSheet["!cols"] = productKeys.map((key) => ({ wch: key === "description" ? 52 : key === "product_code" ? 25 : 20 }));
   productSheet["!rows"] = [{}, {}, { hidden: true }];
   utils.book_append_sheet(workbook, productSheet, "Produtos");
-  const icmsRows = [icmsLabels, icmsHelp, icmsKeys];
+  const icmsRows = [icmsLabels, icmsHelp, icmsKeys, ...(prefill?.items ?? []).map(item => icmsKeys.map(key => key === "reference" || key === "ncm" ? item[key] : key === "icms_tax_treatment_confirmed" ? item.tax_configuration[key] === true ? "Sim" : "Não" : String(item.tax_configuration[key] ?? "")))];
   const icmsSheet = utils.aoa_to_sheet(icmsRows);
   icmsSheet["!cols"] = icmsKeys.map(() => ({ wch: 22 }));
   icmsSheet["!rows"] = [{}, {}, { hidden: true }];
   utils.book_append_sheet(workbook, icmsSheet, "ICMS");
-  writeFile(workbook, "modelo-emissao-simplificada.xlsx");
+  const manualRows = [operationItemLabels, operationItemHelp, operationItemKeys, ...(prefill?.items ?? []).map(item => ["", item.reference, item.description, item.ncm, item.unit, "", "", "", "", "", ""])];
+  const manualSheet = utils.aoa_to_sheet(manualRows);
+  manualSheet["!cols"] = operationItemKeys.map(key => ({ wch: key === "description" ? 55 : 23 }));
+  manualSheet["!rows"] = [{}, {}, { hidden: true }];
+  utils.book_append_sheet(workbook, manualSheet, "Itens da operação");
+  writeFile(workbook, prefill ? "operacao-emissao-simplificada.xlsx" : "modelo-emissao-simplificada.xlsx");
 }

@@ -62,6 +62,8 @@ const workbookFields: Record<string, Array<[string, string, string]>> = {
   ],
   "Operação": [
     ["Número da DUIMP", "Único desta operação; não vira padrão do cliente.", "duimp_number"],
+    ["Consultar Portal Único", "Sim: consulta os dados. Não: usa a aba Itens da operação preenchida e exige revisão manual.", "consult_portal"],
+    ["Data de registro da DUIMP", "AAAA-MM-DD; obrigatória quando não consultar o Portal.", "registration_date"],
     ["Número da NF-e", "Opcional; em branco, usa sequência configurada.", "number"],
     ["Assinar XML", "Sim ou Não; exige certificado ativo e validação fiscal.", "sign"],
     ["Local do desembaraço", "Complementar só se ausente da DUIMP e conferido na fonte oficial.", "duimp_overrides.clearance_location"],
@@ -76,6 +78,9 @@ const workbookFields: Record<string, Array<[string, string, string]>> = {
     ["Taxa Siscomex", "R$; não repita valores já incluídos na DUIMP.", "additional_costs.siscomex_fee"],
     ["THC", "R$; não repita valores já incluídos na DUIMP.", "additional_costs.thc"],
     ["Outras despesas", "R$; confira composição e rateio.", "additional_costs.other"],
+  ],
+  "Plano de notas": [
+    ["Agrupamento", "No fluxo atual, uma nota por exportador. Distribuição detalhada será revisada no processo.", "grouping"],
   ],
 };
 

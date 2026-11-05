@@ -52,6 +52,8 @@ export const routes = {
       nfeNumberSequences: (id: string) =>
         `/clients/${resourceId(id)}/nfe-number-sequences`,
       simplifiedIssuance: (id: string) => `/clients/${resourceId(id)}/simplified-issuance`,
+      simplifiedTemplates: (id: string) => `/clients/${resourceId(id)}/simplified-issuance/templates`,
+      simplifiedTemplate: (id: string, templateId: string) => `/clients/${resourceId(id)}/simplified-issuance/templates/${resourceId(templateId)}`,
       simplifiedIssuanceStart: (id: string) => `/clients/${resourceId(id)}/simplified-issuance/start`,
     },
     fiscalReference: {
@@ -190,6 +192,8 @@ export const routes = {
       nfeNumberSequences: (id: string) =>
         `/api/clients/${resourceId(id)}/nfe-number-sequences`,
       simplifiedIssuance: (id: string) => `/api/clients/${resourceId(id)}/simplified-issuance`,
+      simplifiedTemplates: (id: string) => `/api/clients/${resourceId(id)}/simplified-issuance/templates`,
+      simplifiedTemplate: (id: string, templateId: string) => `/api/clients/${resourceId(id)}/simplified-issuance/templates/${resourceId(templateId)}`,
       simplifiedIssuanceStart: (id: string) => `/api/clients/${resourceId(id)}/simplified-issuance/start`,
       issuanceReadiness: (id: string) =>
         `/api/clients/${resourceId(id)}/issuance-readiness`,
