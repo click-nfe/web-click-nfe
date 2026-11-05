@@ -386,6 +386,9 @@ export function NfeDraftEditor({ processId, draftId }: { processId: string; draf
 
       await updateNfeDraft(draftId, metadata);
       for (const item of values.items) {
+        const original = request.data.items.find((row) => row.id === item.id);
+        if (!original) continue;
+        const initial = itemForm(original);
         const itemPayload: UpdateNfeDraftItemPayload = {
           ...(item.productCode.trim() ? { product_code: item.productCode.trim() } : {}),
           description: item.description.trim(),
@@ -403,14 +406,30 @@ export function NfeDraftEditor({ processId, draftId }: { processId: string; draf
           insurance_value: item.insuranceValue || "0",
           discount_value: item.discountValue || "0",
           other_value: item.otherValue || "0",
-          import_payload: {
-            ...item.importPayload,
-            addition_number: null,
-            sequence_number: nullable(item.sequenceNumber),
-            manufacturer_code: nullable(item.manufacturerCode),
-          },
         };
-        await updateNfeDraftItem(draftId, item.id, itemPayload);
+        // O PATCH de despesas recalcula os valores por item. Enviar todos os
+        // campos do formulário em seguida recolocaria os valores anteriores.
+        const fields: Record<string, keyof ItemForm> = {
+          product_code: "productCode", description: "description", ncm: "ncm",
+          cfop: "cfop", cest: "cest", commercial_unit: "commercialUnit",
+          commercial_quantity: "commercialQuantity", commercial_unit_value: "commercialUnitValue",
+          taxable_unit: "taxableUnit", taxable_quantity: "taxableQuantity",
+          taxable_unit_value: "taxableUnitValue", product_value: "productValue",
+          freight_value: "freightValue", insurance_value: "insuranceValue",
+          discount_value: "discountValue", other_value: "otherValue",
+        };
+        for (const [key, formKey] of Object.entries(fields)) {
+          if (item[formKey] === initial[formKey]) {
+            delete itemPayload[key as keyof UpdateNfeDraftItemPayload];
+          }
+        }
+        if (item.sequenceNumber !== initial.sequenceNumber || item.manufacturerCode !== initial.manufacturerCode) {
+          itemPayload.import_payload = {
+            ...(item.sequenceNumber !== initial.sequenceNumber ? { sequence_number: nullable(item.sequenceNumber) } : {}),
+            ...(item.manufacturerCode !== initial.manufacturerCode ? { manufacturer_code: nullable(item.manufacturerCode) } : {}),
+          };
+        }
+        if (Object.keys(itemPayload).length) await updateNfeDraftItem(draftId, item.id, itemPayload);
       }
       for (const item of changedTaxes) {
         await adjustNfeDraftItemTax(draftId, item.id, {
