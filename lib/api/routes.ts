@@ -88,6 +88,8 @@ export const routes = {
         `/import-processes/${resourceId(id)}/nfe-document-plan/generate-xmls`,
       documentPlanXmlDownload: (id: string) =>
         `/import-processes/${resourceId(id)}/nfe-document-plan/xmls/download`,
+      documentPlanUnnumberedXmls: (id: string) =>
+        `/import-processes/${resourceId(id)}/nfe-document-plan/xmls/unnumbered-download`,
       drafts: (id: string) =>
         `/import-processes/${resourceId(id)}/nfe-drafts`,
       draft: (id: string) => `/nfe-drafts/${resourceId(id)}`,
@@ -99,6 +101,7 @@ export const routes = {
         `/nfe-drafts/${resourceId(id)}/validate`,
       draftXmlDownload: (id: string, versionId: string) =>
         `/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/download`,
+      draftUnnumberedXml: (id: string) => `/nfe-drafts/${resourceId(id)}/unnumbered-xml/download`,
       draftXmlSign: (id: string, versionId: string) =>
         `/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/sign`,
       draftDanfePreview: (id: string, versionId: string) =>
@@ -154,6 +157,7 @@ export const routes = {
         `/api/nfe-drafts/${resourceId(id)}/validate`,
       draftXmlDownload: (id: string, versionId: string) =>
         `/api/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/download`,
+      draftUnnumberedXml: (id: string) => `/api/nfe-drafts/${resourceId(id)}/unnumbered-xml`,
       draftXmlSign: (id: string, versionId: string) =>
         `/api/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/sign`,
       draftDanfePreview: (id: string, versionId: string) =>
@@ -165,6 +169,7 @@ export const routes = {
       draftDanfe: (id: string) => `/api/nfe-drafts/${resourceId(id)}/sefaz/danfe`,
       documentPlanXmls: (id: string) =>
         `/api/import-processes/${resourceId(id)}/xmls`,
+      documentPlanUnnumberedXmls: (id: string) => `/api/import-processes/${resourceId(id)}/unnumbered-xmls`,
     },
     client: {
       list: "/api/clients",

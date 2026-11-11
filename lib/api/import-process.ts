@@ -918,6 +918,20 @@ export async function downloadNfeChildXmlBundle(
   );
 }
 
+export async function downloadUnnumberedChildXmlBundle(accessToken: string, id: string, snapshotId: string) {
+  return apiClient.get<ArrayBuffer>(routes.backend.importProcess.documentPlanUnnumberedXmls(id), {
+    ...bearerConfig(accessToken),
+    params: { duimp_snapshot_id: snapshotId },
+    responseType: "arraybuffer",
+  });
+}
+
+export async function downloadUnnumberedDraftXml(accessToken: string, draftId: string) {
+  return apiClient.get<ArrayBuffer>(routes.backend.importProcess.draftUnnumberedXml(draftId), {
+    ...bearerConfig(accessToken), responseType: "arraybuffer",
+  });
+}
+
 export async function downloadNfeDraftXml(
   accessToken: string,
   draftId: string,
