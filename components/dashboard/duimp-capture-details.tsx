@@ -186,16 +186,17 @@ function DuimpCategories({ snapshot }: { snapshot: DuimpSnapshotDetails }) {
       </Category>
 
       <Category title={`Itens (${items.length})`} icon={<Boxes size={18} />}>
-        <p className="mb-3 text-xs text-muted-foreground">O código vem da coluna “Código do Produto” da DUIMP e pode se repetir em vários itens. Ele inicia o cProd da NF-e e pode ser revisado no rascunho.</p>
+        <p className="mb-3 text-xs text-muted-foreground">O Código do Produto da DUIMP inicia o cProd da NF-e. O partnumber vem do Código Interno do Produto no Catálogo e permanece separado para conferência.</p>
         {items.length ? (
           <div className="max-w-full overflow-x-auto overscroll-x-contain pb-2" role="region" aria-label="Tabela de itens da DUIMP; role horizontalmente para ver todas as colunas" tabIndex={0}>
-            <table className="w-full min-w-[1240px] table-fixed text-left text-sm">
-              <thead className="text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="w-[70px] pb-3 pr-4">Item</th><th className="w-[190px] pb-3 pr-4">Código do Produto (DUIMP)</th><th className="w-[360px] pb-3 pr-4">Descrição</th><th className="w-[110px] pb-3 pr-4">NCM</th><th className="w-[170px] pb-3 pr-4">Quantidade</th><th className="w-[150px] pb-3 pr-4">Exportador</th><th className="w-[190px] pb-3 text-right">Valor aduaneiro</th></tr></thead>
+            <table className="w-full min-w-[1430px] table-fixed text-left text-sm">
+              <thead className="text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="w-[70px] pb-3 pr-4">Item</th><th className="w-[190px] pb-3 pr-4">Código do Produto (DUIMP)</th><th className="w-[190px] pb-3 pr-4">Partnumber (Catálogo)</th><th className="w-[360px] pb-3 pr-4">Descrição</th><th className="w-[110px] pb-3 pr-4">NCM</th><th className="w-[170px] pb-3 pr-4">Quantidade</th><th className="w-[150px] pb-3 pr-4">Exportador</th><th className="w-[190px] pb-3 text-right">Valor aduaneiro</th></tr></thead>
               <tbody className="divide-y divide-border">
                 {items.map((item, index) => (
                   <tr key={`${display(first(item, "number", "item_number"), String(index))}-${index}`}>
                     <td className="py-3 pr-4 align-top font-semibold">{display(first(item, "number", "item_number", "numeroItem"))}</td>
                     <td className="break-words py-3 pr-4 align-top font-mono text-xs">{display(first(item, "catalog_product_id", "catalog_product_code", "product_code"))}</td>
+                    <td className="break-words py-3 pr-4 align-top font-mono text-xs">{Array.isArray(item.part_numbers) && item.part_numbers.length > 1 ? item.part_numbers.map(String).join(" · ") : display(first(item, "part_number", "catalog_internal_code"))}</td>
                     <td className="break-words py-3 pr-4 align-top font-medium">{display(first(item, "description", "product_description"))}</td>
                     <td className="whitespace-nowrap py-3 pr-4 align-top font-mono text-xs">{display(item.ncm)}</td>
                     <td className="py-3 pr-4 align-top">{display(first(item, "quantity", "commercial_quantity"))} {display(first(item, "commercial_unit", "unit"), "")}</td>

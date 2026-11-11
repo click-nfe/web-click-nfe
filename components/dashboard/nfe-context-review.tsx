@@ -440,7 +440,7 @@ function ClassificationRow({ item }: { item: NfeItemClassification }) {
   const ready = item.status === "classified";
   return (
     <tr>
-      <td className="max-w-80 px-6 py-4"><p className="font-semibold">Item {item.duimp_item_number}</p><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.description || item.product_code || "Sem descrição"}</p></td>
+      <td className="max-w-80 px-6 py-4"><p className="font-semibold">Item {item.duimp_item_number}</p><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.description || item.product_code || "Sem descrição"}</p><p className="mt-1 text-xs text-muted-foreground">Código DUIMP: {item.product_code || "não informado"} · Partnumber: {item.part_numbers?.length > 1 ? item.part_numbers.join(" · ") : item.part_number || "não informado"}</p></td>
       <td className="px-6 py-4 font-mono text-xs">{item.ncm || "—"}</td>
       <td className="px-6 py-4">{item.import_purpose ? purposeLabels[item.import_purpose] : "—"}</td>
       <td className="px-6 py-4 font-mono text-xs">{item.cfop || "—"}</td>
@@ -503,7 +503,7 @@ function ItemClassificationForm({
         {state.items.map((item) => (
           <div key={item.duimp_item_number} className="rounded-2xl border border-border p-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0"><p className="font-semibold">Item {item.duimp_item_number} · NCM {item.ncm || "não informado"}</p><p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description || item.product_code || "Sem descrição"}</p>{item.tax_rule ? <p className="mt-2 text-xs text-sage-strong">Regra atual: {item.tax_rule.name} · CFOP {item.cfop}</p> : null}</div>
+              <div className="min-w-0"><p className="font-semibold">Item {item.duimp_item_number} · NCM {item.ncm || "não informado"}</p><p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description || item.product_code || "Sem descrição"}</p><p className="mt-1 text-xs text-muted-foreground">Código DUIMP: {item.product_code || "não informado"} · Partnumber: {item.part_numbers?.length > 1 ? item.part_numbers.join(" · ") : item.part_number || "não informado"}</p>{item.tax_rule ? <p className="mt-2 text-xs text-sage-strong">Regra atual: {item.tax_rule.name} · CFOP {item.cfop}</p> : null}</div>
               <label className="w-full shrink-0 sm:w-64"><span className="field-label">Finalidade *</span><select className="field-input" value={purposes[item.duimp_item_number] ?? ""} onChange={(event) => setPurposes((current) => ({ ...current, [item.duimp_item_number]: event.target.value as ImportPurpose }))} required><option value="">Selecione</option>{Object.entries(purposeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             </div>
             {item.rule_candidates.length ? <div className="mt-3 rounded-xl bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300"><p className="font-semibold">Regras próximas, mas não aplicáveis:</p>{item.rule_candidates.map((candidate) => <p key={candidate.id} className="mt-1">{candidate.name}: {candidate.mismatch_reasons.map((reason) => mismatchLabels[reason] ?? reason).join(", ")}</p>)}</div> : null}

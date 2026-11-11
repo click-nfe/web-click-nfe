@@ -261,6 +261,8 @@ export type NfeItemClassification = {
   duimp_item_number: string;
   source?: string | null;
   product_code: string | null;
+  part_number: string | null;
+  part_numbers: string[];
   description: string | null;
   ncm: string | null;
   exporter_code: string | null;
