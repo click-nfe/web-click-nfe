@@ -102,6 +102,7 @@ export const routes = {
       draftXmlDownload: (id: string, versionId: string) =>
         `/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/download`,
       draftUnnumberedXml: (id: string) => `/nfe-drafts/${resourceId(id)}/unnumbered-xml/download`,
+      draftUnnumberedDanfePreview: (id: string) => `/nfe-drafts/${resourceId(id)}/unnumbered-xml/danfe-preview`,
       draftXmlSign: (id: string, versionId: string) =>
         `/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/sign`,
       draftDanfePreview: (id: string, versionId: string) =>
@@ -158,6 +159,7 @@ export const routes = {
       draftXmlDownload: (id: string, versionId: string) =>
         `/api/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/download`,
       draftUnnumberedXml: (id: string) => `/api/nfe-drafts/${resourceId(id)}/unnumbered-xml`,
+      draftUnnumberedDanfePreview: (id: string) => `/api/nfe-drafts/${resourceId(id)}/unnumbered-danfe-preview`,
       draftXmlSign: (id: string, versionId: string) =>
         `/api/nfe-drafts/${resourceId(id)}/xml-versions/${resourceId(versionId)}/sign`,
       draftDanfePreview: (id: string, versionId: string) =>

@@ -932,6 +932,12 @@ export async function downloadUnnumberedDraftXml(accessToken: string, draftId: s
   });
 }
 
+export async function downloadUnnumberedDanfePreview(accessToken: string, draftId: string) {
+  return apiClient.get<ArrayBuffer>(routes.backend.importProcess.draftUnnumberedDanfePreview(draftId), {
+    ...bearerConfig(accessToken), responseType: "arraybuffer",
+  });
+}
+
 export async function downloadNfeDraftXml(
   accessToken: string,
   draftId: string,
