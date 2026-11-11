@@ -477,6 +477,8 @@ export type NfeDraftValidation = {
 export type UpdateNfeDraftPayload = {
   document?: {
     operation_nature?: string | null;
+    product_code_source?: "duimp" | "part_number";
+    foreign_id_mode?: "source" | "zero_placeholder";
     presence_indicator?: string | null;
     intermediary_indicator?: string | null;
   };

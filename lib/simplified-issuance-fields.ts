@@ -35,6 +35,8 @@ const workbookFields: Record<string, Array<[string, string, string]>> = {
   "Nota fiscal": [
     ["Série da NF-e", "Série recorrente; o número específico vai em Operação.", "series"],
     ["Natureza da operação", "Texto da natureza da operação na NF-e.", "document.operation_nature"],
+    ["Código do item na NF-e", "duimp (padrão) usa Código do Produto; part_number usa o código interno único do Catálogo quando couber em 60 caracteres. Valores definidos manualmente prevalecem.", "document.product_code_source"],
+    ["Identificação do exportador", "source (padrão) conserva a identificação estrangeira consultada; zero_placeholder usa 00.000.000/0000-00 em dest/idEstrangeiro. Não altera o CNPJ do adquirente na DI.", "document.foreign_id_mode"],
     ["Indicador de presença", "Código 0, 1, 2, 3, 4, 5 ou 9.", "document.presence_indicator"],
     ["Indicador de intermediador", "Código 0 ou 1.", "document.intermediary_indicator"],
     ["Indicador de pagamento", "Código 0 à vista ou 1 a prazo, se aplicável.", "payment.payment_indicator"],
