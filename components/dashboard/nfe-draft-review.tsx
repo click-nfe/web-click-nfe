@@ -191,6 +191,7 @@ export function NfeDraftReviewPanel({
       </section>
 
       <NfeChildXmlPanel
+        clientId={clientId}
         processId={processId}
         snapshotId={snapshotId}
         plan={plan}

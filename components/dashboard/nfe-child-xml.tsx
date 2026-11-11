@@ -2,14 +2,19 @@
 
 import { AlertTriangle, CheckCircle2, Download, FileCode2, Hash, LoaderCircle, ShieldAlert } from "lucide-react";
 import { useState } from "react";
+import useSWR from "swr";
 import { NfeSectionHeader } from "@/components/dashboard/nfe-section-header";
+import type { NfeNumberSequence } from "@/lib/api/nfe-number-sequence";
+import { routes } from "@/lib/api/routes";
 
 import type { NfeChildXmlResult, NfeDocumentPlan, NfePlannedDocument } from "@/lib/api/import-process";
-import { bffErrorMessage } from "@/lib/bff/client";
+import { bffErrorMessage, bffFetcher } from "@/lib/bff/client";
 import {
   generateNfeChildXmls,
   nfeChildXmlBundleUrl,
   nfeDraftXmlDownloadUrl,
+  unnumberedChildXmlBundleUrl,
+  unnumberedDraftXmlUrl,
 } from "@/lib/bff/import-process";
 
 function supplierName(document: NfePlannedDocument) {
@@ -30,6 +35,7 @@ export function xmlIsCurrent(document: NfePlannedDocument) {
 }
 
 export function NfeChildXmlPanel({
+  clientId,
   processId,
   snapshotId,
   plan,
@@ -37,6 +43,7 @@ export function NfeChildXmlPanel({
   onPlanChange,
   onWorkflowChange,
 }: {
+  clientId: string;
   processId: string;
   snapshotId: string;
   plan: NfeDocumentPlan;
@@ -47,10 +54,14 @@ export function NfeChildXmlPanel({
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<NfeChildXmlResult[]>([]);
+  const { data: sequences } = useSWR<NfeNumberSequence[]>(routes.bff.client.nfeNumberSequences(clientId), bffFetcher);
   const allDraftsReady = plan.progress.all_drafts_created
     && plan.documents.every((document) => document.draft && !(document.draft.validation_errors ?? []).length);
   const allXmlsValid = plan.documents.length > 0
     && plan.documents.every((document) => xmlIsCurrent(document) && document.draft?.latest_xml?.xsd_valid === true);
+  const canNumber = plan.documents.every((document) => document.draft?.number || sequences?.some((sequence) =>
+    sequence.environment === "production" && sequence.model === "55" && sequence.series === document.draft?.series && sequence.status === "active"));
+  const allUnnumbered = allDraftsReady && plan.documents.every((document) => !document.draft?.number && !document.draft?.access_key);
 
   async function generate() {
     setGenerating(true);
@@ -71,7 +82,7 @@ export function NfeChildXmlPanel({
   return (
     <section id="xmls-nfe" data-unlocked={allDraftsReady} className="surface-card mt-6 scroll-mt-56 lg:scroll-mt-40">
       <NfeSectionHeader step={7} title="Chaves e XMLs das NF-e filhas" summary={`${plan.progress.xsd_valid_count} XML(s) válidos no XSD`} actions={
-        <button type="button" className="button button-primary" disabled={!allDraftsReady || generating} onClick={generate}>
+        <button type="button" className="button button-primary" disabled={!allDraftsReady || !canNumber || generating} onClick={generate}>
           {generating ? <LoaderCircle className="animate-spin" size={16} /> : <FileCode2 size={16} />}
           {generating ? "Gerando e validando..." : allXmlsValid ? "Revalidar XMLs" : "Gerar e validar XMLs"}
         </button>
@@ -81,7 +92,7 @@ export function NfeChildXmlPanel({
         {!allDraftsReady ? (
           <div className="flex items-start gap-3 rounded-2xl border border-amber-400/35 bg-amber-500/5 p-4 text-sm text-amber-800 dark:text-amber-300">
             <AlertTriangle className="mt-0.5 shrink-0" size={18} />
-            Gere e corrija todos os rascunhos na etapa 6 antes de reservar os números.
+            Gere e corrija todos os rascunhos na etapa 6 antes de baixar os XMLs de trabalho.
           </div>
         ) : (
           <div className={`flex items-start gap-3 rounded-2xl border p-4 text-sm ${allXmlsValid ? "border-primary/20 bg-sage-soft text-sage-strong" : "border-border bg-muted/35 text-muted-foreground"}`}>
@@ -91,6 +102,12 @@ export function NfeChildXmlPanel({
               : `${plan.progress.xsd_valid_count} de ${plan.documents.length} XML(s) com validação XSD registrada. Confira cada resultado abaixo.`}</span>
           </div>
         )}
+
+        <div className="rounded-2xl border border-border bg-muted/35 p-4 text-sm">
+          <p className="font-semibold">XML de trabalho sem número</p>
+          <p className="mt-1 text-muted-foreground">Inclui itens, tributos e dados da importação, sem nNF, chave ou validade fiscal. É gerado para conferência, não é validado no XSD e não pode ser assinado ou transmitido.</p>
+          {allUnnumbered ? <a className="button button-secondary mt-3" href={unnumberedChildXmlBundleUrl(processId, snapshotId)}><Download size={16} /> Baixar todos (.zip)</a> : null}
+        </div>
 
         {plan.documents.map((document) => {
           const draft = document.draft;
@@ -113,6 +130,9 @@ export function NfeChildXmlPanel({
                     <Download size={16} /> Baixar XML v{xml.version_number}
                   </a>
                 ) : null}
+                {draft && !draft.number && !draft.access_key && !(draft.validation_errors ?? []).length ? (
+                  <a className="button button-secondary" href={unnumberedDraftXmlUrl(draft.id)}><Download size={16} /> XML de trabalho sem número</a>
+                ) : null}
               </div>
               {draft?.access_key ? (
                 <p className="mt-3 break-all font-mono text-xs">Chave de acesso: {draft.access_key}</p>
@@ -124,7 +144,7 @@ export function NfeChildXmlPanel({
               {result?.message ? <p className="mt-3 text-sm text-destructive" role="alert">{result.message}</p> : null}
               {draft && !draft.number ? (
                 <div className="mt-4 space-y-2">
-                  <p className="text-sm text-muted-foreground">Para gerar o XML desta nota, configure a sequência da série {draft.series} para este cliente. Depois, clique novamente em “Gerar e validar XMLs”.</p>
+                  <p className="text-sm text-muted-foreground">Para gerar um XML válido no XSD, configure a sequência da série {draft.series}. O XML de trabalho acima pode ser baixado sem numeração.</p>
                   <button type="button" className="button button-secondary" onClick={() => onConfigureSequence(draft.series)}>
                     <Hash size={16} /> Configurar numeração · série {draft.series}
                   </button>

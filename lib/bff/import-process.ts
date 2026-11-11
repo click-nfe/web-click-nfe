@@ -213,6 +213,15 @@ export function nfeDraftXmlDownloadUrl(draftId: string, versionId: string) {
   return routes.bff.importProcess.draftXmlDownload(draftId, versionId);
 }
 
+export function unnumberedDraftXmlUrl(draftId: string) {
+  return routes.bff.importProcess.draftUnnumberedXml(draftId);
+}
+
+export function unnumberedChildXmlBundleUrl(id: string, snapshotId: string) {
+  const search = new URLSearchParams({ duimp_snapshot_id: snapshotId });
+  return `${routes.bff.importProcess.documentPlanUnnumberedXmls(id)}?${search}`;
+}
+
 export async function signNfeDraftXml(draftId: string, versionId: string, certificateId: string) {
   const response = await bffClient.post(
     routes.bff.importProcess.draftXmlSign(draftId, versionId),
