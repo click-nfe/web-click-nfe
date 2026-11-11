@@ -10,11 +10,13 @@ import { routes } from "@/lib/api/routes";
 import type { NfeChildXmlResult, NfeDocumentPlan, NfePlannedDocument } from "@/lib/api/import-process";
 import { bffErrorMessage, bffFetcher } from "@/lib/bff/client";
 import {
+  danfePreviewUrl,
   generateNfeChildXmls,
   nfeChildXmlBundleUrl,
   nfeDraftXmlDownloadUrl,
   unnumberedChildXmlBundleUrl,
   unnumberedDraftXmlUrl,
+  unnumberedDanfePreviewUrl,
 } from "@/lib/bff/import-process";
 
 function supplierName(document: NfePlannedDocument) {
@@ -105,7 +107,7 @@ export function NfeChildXmlPanel({
 
         <div className="rounded-2xl border border-border bg-muted/35 p-4 text-sm">
           <p className="font-semibold">XML de trabalho sem número</p>
-          <p className="mt-1 text-muted-foreground">Inclui itens, tributos e dados da importação, sem nNF, chave ou validade fiscal. É gerado para conferência, não é validado no XSD e não pode ser assinado ou transmitido.</p>
+          <p className="mt-1 text-muted-foreground">Inclui itens, tributos e dados da importação, sem nNF, chave ou validade fiscal. Você também pode baixar a prévia da DANFE para conferência. O XML não é validado no XSD e não pode ser assinado ou transmitido.</p>
           {allUnnumbered ? <a className="button button-secondary mt-3" href={unnumberedChildXmlBundleUrl(processId, snapshotId)}><Download size={16} /> Baixar todos (.zip)</a> : null}
         </div>
 
@@ -131,7 +133,13 @@ export function NfeChildXmlPanel({
                   </a>
                 ) : null}
                 {draft && !draft.number && !draft.access_key && !(draft.validation_errors ?? []).length ? (
-                  <a className="button button-secondary" href={unnumberedDraftXmlUrl(draft.id)}><Download size={16} /> XML de trabalho sem número</a>
+                  <div className="flex flex-wrap gap-2">
+                    <a className="button button-secondary" href={unnumberedDraftXmlUrl(draft.id)}><Download size={16} /> XML de trabalho sem número</a>
+                    <a className="button button-secondary" href={unnumberedDanfePreviewUrl(draft.id)}><Download size={16} /> Prévia da DANFE sem número</a>
+                  </div>
+                ) : null}
+                {draft && valid && xml ? (
+                  <a className="button button-secondary" href={danfePreviewUrl(draft.id, xml.id)}><Download size={16} /> Prévia da DANFE</a>
                 ) : null}
               </div>
               {draft?.access_key ? (

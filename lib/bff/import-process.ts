@@ -217,6 +217,10 @@ export function unnumberedDraftXmlUrl(draftId: string) {
   return routes.bff.importProcess.draftUnnumberedXml(draftId);
 }
 
+export function unnumberedDanfePreviewUrl(draftId: string) {
+  return routes.bff.importProcess.draftUnnumberedDanfePreview(draftId);
+}
+
 export function unnumberedChildXmlBundleUrl(id: string, snapshotId: string) {
   const search = new URLSearchParams({ duimp_snapshot_id: snapshotId });
   return `${routes.bff.importProcess.documentPlanUnnumberedXmls(id)}?${search}`;
