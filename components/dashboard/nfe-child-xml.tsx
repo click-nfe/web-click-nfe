@@ -83,8 +83,16 @@ export function NfeChildXmlPanel({
 
   return (
     <section id="xmls-nfe" data-unlocked={allDraftsReady} className="surface-card mt-6 scroll-mt-56 lg:scroll-mt-40">
-      <NfeSectionHeader step={7} title="Chaves e XMLs das NF-e filhas" summary={`${plan.progress.xsd_valid_count} XML(s) válidos no XSD`} actions={
-        <button type="button" className="button button-primary" disabled={!allDraftsReady || !canNumber || generating} onClick={generate}>
+      <NfeSectionHeader step={7} title="Chaves e XMLs das NF-e filhas" summary={allUnnumbered ? "XMLs de trabalho sem numeração" : `${plan.progress.xsd_valid_count} XML(s) válidos no XSD`} actions={
+        allUnnumbered ? (
+          <div className="flex flex-wrap gap-2">
+            <a className="button button-primary" href={unnumberedChildXmlBundleUrl(processId, snapshotId)}><Download size={16} /> Baixar XMLs de trabalho atualizados (.zip)</a>
+            {canNumber ? <button type="button" className="button button-secondary" disabled={generating} onClick={generate}>
+              {generating ? <LoaderCircle className="animate-spin" size={16} /> : <FileCode2 size={16} />}
+              {generating ? "Gerando e validando..." : "Gerar XMLs numerados e validar XSD"}
+            </button> : null}
+          </div>
+        ) : <button type="button" className="button button-primary" disabled={!allDraftsReady || !canNumber || generating} onClick={generate}>
           {generating ? <LoaderCircle className="animate-spin" size={16} /> : <FileCode2 size={16} />}
           {generating ? "Gerando e validando..." : allXmlsValid ? "Revalidar XMLs" : "Gerar e validar XMLs"}
         </button>
@@ -99,7 +107,9 @@ export function NfeChildXmlPanel({
         ) : (
           <div className={`flex items-start gap-3 rounded-2xl border p-4 text-sm ${allXmlsValid ? "border-primary/20 bg-sage-soft text-sage-strong" : "border-border bg-muted/35 text-muted-foreground"}`}>
             {allXmlsValid ? <CheckCircle2 className="mt-0.5 shrink-0" size={19} /> : <FileCode2 className="mt-0.5 shrink-0" size={19} />}
-            <span>{allXmlsValid
+            <span>{allUnnumbered
+              ? "Os XMLs de trabalho são montados no momento do download com os rascunhos salvos. Baixe novamente após alterar o código do item; o arquivo anterior não é atualizado. A validação XSD exige numeração."
+              : allXmlsValid
               ? "Todos os XMLs individuais estão válidos no XSD."
               : `${plan.progress.xsd_valid_count} de ${plan.documents.length} XML(s) com validação XSD registrada. Confira cada resultado abaixo.`}</span>
           </div>
@@ -108,7 +118,7 @@ export function NfeChildXmlPanel({
         <div className="rounded-2xl border border-border bg-muted/35 p-4 text-sm">
           <p className="font-semibold">XML de trabalho sem número</p>
           <p className="mt-1 text-muted-foreground">Inclui itens, tributos e dados da importação, sem nNF, chave ou validade fiscal. Você também pode baixar a prévia da DANFE para conferência. O XML não é validado no XSD e não pode ser assinado ou transmitido.</p>
-          {allUnnumbered ? <a className="button button-secondary mt-3" href={unnumberedChildXmlBundleUrl(processId, snapshotId)}><Download size={16} /> Baixar todos (.zip)</a> : null}
+          {allUnnumbered && !canNumber ? <p className="mt-2 text-muted-foreground">Para criar XMLs numerados e validar no XSD, configure a sequência da NF-e nas notas abaixo.</p> : null}
         </div>
 
         {plan.documents.map((document) => {
@@ -134,7 +144,7 @@ export function NfeChildXmlPanel({
                 ) : null}
                 {draft && !draft.number && !draft.access_key && !(draft.validation_errors ?? []).length ? (
                   <div className="flex flex-wrap gap-2">
-                    <a className="button button-secondary" href={unnumberedDraftXmlUrl(draft.id)}><Download size={16} /> XML de trabalho sem número</a>
+                    <a className="button button-secondary" href={unnumberedDraftXmlUrl(draft.id)}><Download size={16} /> Baixar XML atualizado sem número</a>
                     <a className="button button-secondary" href={unnumberedDanfePreviewUrl(draft.id)}><Download size={16} /> Prévia da DANFE sem número</a>
                   </div>
                 ) : null}
@@ -147,7 +157,7 @@ export function NfeChildXmlPanel({
               ) : null}
               <div className={`mt-4 flex items-center gap-2 text-sm ${valid ? "text-sage-strong" : "text-muted-foreground"}`}>
                 {valid ? <CheckCircle2 size={17} /> : <ShieldAlert size={17} />}
-                <span>{!xml ? "XML pendente" : !current ? "XML desatualizado após edição do rascunho" : valid ? "XML não assinado válido no XSD" : xml.xsd_valid === false ? "XML reprovado no XSD" : "Validação XSD pendente"}</span>
+                <span>{!draft?.number && !draft?.access_key ? "XML de trabalho disponível no download, com os dados salvos deste rascunho" : !xml ? "XML pendente" : !current ? "XML desatualizado após edição do rascunho" : valid ? "XML não assinado válido no XSD" : xml.xsd_valid === false ? "XML reprovado no XSD" : "Validação XSD pendente"}</span>
               </div>
               {result?.message ? <p className="mt-3 text-sm text-destructive" role="alert">{result.message}</p> : null}
               {draft && !draft.number ? (
