@@ -1,5 +1,6 @@
 import type { SimplifiedConfig, SimplifiedItem, SimplifiedOperation } from "@/lib/api/simplified-issuance";
 import { fieldDefinitions } from "@/lib/simplified-issuance-fields";
+import { decimalInput } from "@/lib/decimal-input";
 
 export function emptySimplifiedConfig(): SimplifiedConfig {
   return { series: "", document: {}, transport: {}, payment: {}, volume: {}, additional_info: {}, items: [] };
@@ -9,7 +10,7 @@ type Cell = string | number | null | undefined;
 type Rows = Cell[][];
 const value = (cell: Cell) => String(cell ?? "").trim();
 const digits = (cell: Cell) => value(cell).replace(/\D/g, "");
-const rate = (cell: Cell) => value(cell).replace(",", ".");
+const rate = (cell: Cell) => decimalInput(value(cell), "Valor numérico na planilha", true) ?? "";
 export type ImportedSimplifiedWorkbook = { config: SimplifiedConfig; operation: SimplifiedOperation; manualPayload?: Record<string, unknown>; client: Record<string, string>; fiscalProfile: Record<string, string> };
 const operationItemKeys = ["number", "reference", "description", "ncm", "unit", "quantity", "product_value", "unit_value", "freight_value", "insurance_value", "exporter_code"];
 const operationItemLabels = ["Nº item DUIMP", "Código do Produto", "Descrição", "NCM", "Unidade", "Quantidade", "Valor produto (R$)", "Valor unitário (R$)", "Frete (R$)", "Seguro (R$)", "Código do exportador"];

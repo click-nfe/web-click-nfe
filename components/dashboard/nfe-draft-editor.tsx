@@ -22,6 +22,7 @@ import type {
   UpdateNfeDraftPayload,
 } from "@/lib/api/import-process";
 import { bffErrorMessage, bffFetcher } from "@/lib/bff/client";
+import { decimalInput, integerInput } from "@/lib/decimal-input";
 import {
   adjustNfeDraftItemTax,
   nfeDraftUrl,
@@ -137,7 +138,7 @@ function text(value: unknown) {
 }
 
 function nullable(value: string) {
-  return value.trim() || null;
+  return value.normalize("NFC").trim() || null;
 }
 
 function taxSignature(values: Pick<ItemForm, "cfop" | "icmsCst" | "icmsBase" | "icmsRate" | "icmsReductionRate" | "icmsDefermentRate">) {
@@ -329,6 +330,37 @@ export function NfeDraftEditor({ processId, draftId }: { processId: string; draf
     setActionError(null);
     setSuccess(null);
     try {
+      // Validar todos os números antes do primeiro PATCH: um erro num item não
+      // deve deixar o rascunho salvo pela metade.
+      const number = (value: string, label: string) => decimalInput(value, label) ?? "0";
+      const optionalNumber = (value: string, label: string) => decimalInput(value, label, true);
+      const normalizedItems = values.items.map((item) => ({
+        ...item,
+        commercialQuantity: number(item.commercialQuantity, `Item ${item.itemNumber} · quantidade comercial`),
+        commercialUnitValue: number(item.commercialUnitValue, `Item ${item.itemNumber} · valor unitário comercial`),
+        taxableQuantity: number(item.taxableQuantity, `Item ${item.itemNumber} · quantidade tributável`),
+        taxableUnitValue: number(item.taxableUnitValue, `Item ${item.itemNumber} · valor unitário tributável`),
+        productValue: number(item.productValue, `Item ${item.itemNumber} · valor do produto`),
+        freightValue: number(item.freightValue || "0", `Item ${item.itemNumber} · frete`),
+        insuranceValue: number(item.insuranceValue || "0", `Item ${item.itemNumber} · seguro`),
+        discountValue: number(item.discountValue || "0", `Item ${item.itemNumber} · desconto`),
+        otherValue: number(item.otherValue || "0", `Item ${item.itemNumber} · outras despesas`),
+        icmsBase: number(item.icmsBase, `Item ${item.itemNumber} · base do ICMS`),
+        icmsRate: optionalNumber(item.icmsRate, `Item ${item.itemNumber} · alíquota ICMS`) ?? "",
+        icmsReductionRate: optionalNumber(item.icmsReductionRate, `Item ${item.itemNumber} · redução ICMS`) ?? "",
+        icmsDefermentRate: optionalNumber(item.icmsDefermentRate, `Item ${item.itemNumber} · diferimento ICMS`) ?? "",
+      }));
+      const volumeQuantity = integerInput(values.volumeQuantity, "Quantidade de volumes");
+      const netWeight = optionalNumber(values.volumeNetWeight, "Peso líquido");
+      const grossWeight = optionalNumber(values.volumeGrossWeight, "Peso bruto");
+      const paymentValue = optionalNumber(values.paymentValue, "Valor do pagamento");
+      const costs = {
+        afrmm: number(values.afrmm || "0", "AFRMM"),
+        tum: number(values.tum || "0", "TUM"),
+        siscomex_fee: number(values.siscomexFee || "0", "Taxa Siscomex"),
+        thc: number(values.thc || "0", "THC"),
+        other: number(values.otherCost || "0", "Outras despesas"),
+      };
       const carrierFilled = [values.carrierTaxId, values.carrierName, values.carrierStateRegistration, values.carrierAddress, values.carrierCity, values.carrierState].some((value) => value.trim());
       const paymentFilled = values.paymentMethod.trim().length === 2;
       const metadata: UpdateNfeDraftPayload = {
@@ -364,21 +396,15 @@ export function NfeDraftEditor({ processId, draftId }: { processId: string; draf
             state: nullable(values.carrierState.toUpperCase()),
           } : null,
           volume: {
-            quantity: values.volumeQuantity ? Number(values.volumeQuantity) : null,
+            quantity: volumeQuantity,
             species: nullable(values.volumeSpecies),
             brand: nullable(values.volumeBrand),
             numbering: nullable(values.volumeNumbering),
-            net_weight: nullable(values.volumeNetWeight),
-            gross_weight: nullable(values.volumeGrossWeight),
+            net_weight: netWeight,
+            gross_weight: grossWeight,
           },
         },
-        additional_costs: {
-          afrmm: values.afrmm || "0",
-          tum: values.tum || "0",
-          siscomex_fee: values.siscomexFee || "0",
-          thc: values.thc || "0",
-          other: values.otherCost || "0",
-        },
+        additional_costs: costs,
         additional_info: {
           automatic_summary: values.automaticSummary,
           fiscal: nullable(values.fiscalInfo),
@@ -393,11 +419,11 @@ export function NfeDraftEditor({ processId, draftId }: { processId: string; draf
         payment_indicator: values.paymentIndicator,
         method: values.paymentMethod,
         description: nullable(values.paymentDescription),
-        value: nullable(values.paymentValue),
+        value: paymentValue,
       };
 
       await updateNfeDraft(draftId, metadata);
-      for (const item of values.items) {
+      for (const item of normalizedItems) {
         const original = request.data.items.find((row) => row.id === item.id);
         if (!original) continue;
         const initial = itemForm(original);
@@ -443,7 +469,8 @@ export function NfeDraftEditor({ processId, draftId }: { processId: string; draf
         }
         if (Object.keys(itemPayload).length) await updateNfeDraftItem(draftId, item.id, itemPayload);
       }
-      for (const item of changedTaxes) {
+      for (const changed of changedTaxes) {
+        const item = normalizedItems.find((row) => row.id === changed.id)!;
         await adjustNfeDraftItemTax(draftId, item.id, {
           source: "manual_adjustment",
           reason: values.taxReason.trim(),
@@ -463,7 +490,7 @@ export function NfeDraftEditor({ processId, draftId }: { processId: string; draf
       localStorage.setItem("click-nfe:draft-updated", JSON.stringify({ draftId, at: Date.now() }));
       setSuccess("Alterações salvas e rascunho revalidado. Ao retornar ao fluxo, os dados serão atualizados automaticamente.");
     } catch (error) {
-      setActionError(bffErrorMessage(error));
+      setActionError(error instanceof Error && !('response' in error) ? error.message : bffErrorMessage(error));
     } finally {
       setSaving(false);
     }
