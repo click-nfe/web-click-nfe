@@ -23,6 +23,7 @@ import type {
   NfeSharedCosts,
 } from "@/lib/api/import-process";
 import { bffErrorMessage, bffFetcher } from "@/lib/bff/client";
+import { decimalInput } from "@/lib/decimal-input";
 import {
   createNfeDocumentPlan,
   nfeDocumentPlanUrl,
@@ -109,12 +110,12 @@ export function NfeDocumentPlanPanel({
     for (const field of costFields) {
       const rawValue = costs[field.key].trim();
       if (!rawValue) continue;
-      const normalized = rawValue.replace(",", ".");
-      if (!Number.isFinite(Number(normalized)) || Number(normalized) < 0) {
-        setActionError(`Informe um valor válido para ${field.label}.`);
+      try {
+        additionalCosts[field.key] = decimalInput(rawValue, field.label) ?? "0";
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : `Informe um valor válido para ${field.label}.`);
         return;
       }
-      additionalCosts[field.key] = normalized;
     }
 
     setSaving(true);

@@ -37,6 +37,7 @@ import type { ClientFiscalProfile } from "@/lib/api/client-fiscal-profile";
 import type { ClientRecord } from "@/lib/api/client-record";
 import { routes } from "@/lib/api/routes";
 import { bffErrorMessage, bffFetcher } from "@/lib/bff/client";
+import { decimalInput } from "@/lib/decimal-input";
 import { getClientFiscalProfile } from "@/lib/bff/client-fiscal-profile";
 import {
   createClientImportTaxRule,
@@ -146,7 +147,11 @@ function digits(value: string, limit: number) {
 }
 
 function optionalRate(value: string) {
-  return value.trim().replace(",", ".");
+  try {
+    return decimalInput(value, "Valor da regra tributária", true) ?? "";
+  } catch {
+    return value.trim(); // A validação do formulário aponta o campo fora do intervalo.
+  }
 }
 
 function patternsFrom(value: string) {
