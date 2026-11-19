@@ -88,6 +88,7 @@ export function NfeDocumentPlanPanel({
   const { data, error, isLoading, mutate } = useSWR<NfeDocumentPlanState>(url, bffFetcher);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [costs, setCosts] = useState<CostValues>(emptyCosts);
+  const [includeInternationalCosts, setIncludeInternationalCosts] = useState(true);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -95,6 +96,7 @@ export function NfeDocumentPlanPanel({
     // A API devolve os custos já resolvidos, sem distinguir automáticos de
     // substituições manuais. Manter os campos vazios preserva os automáticos.
     setCosts(emptyCosts);
+    setIncludeInternationalCosts(data?.plan?.include_international_costs_in_product ?? true);
     setActionError(null);
     setSheetOpen(true);
   }
@@ -124,6 +126,7 @@ export function NfeDocumentPlanPanel({
       const plan = await createNfeDocumentPlan(processId, {
         duimp_snapshot_id: snapshotId,
         additional_costs: additionalCosts,
+        include_international_costs_in_product: includeInternationalCosts,
       });
       await mutate(
         { process_id: processId, snapshot_id: snapshotId, plan },
@@ -146,7 +149,7 @@ export function NfeDocumentPlanPanel({
         <NfeSectionHeader step={5} title="Plano de notas" summary="Uma NF-e por exportador e despesas rateadas" actions={
           plan ? (
             <button type="button" className="button button-secondary" onClick={openEditor}>
-              <PencilLine size={16} /> Recalcular despesas
+              <PencilLine size={16} /> Ajustar plano
             </button>
           ) : null
         } />
@@ -210,12 +213,28 @@ export function NfeDocumentPlanPanel({
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         title={plan ? "Recalcular plano de notas" : "Montar plano de notas"}
-        description="Valores informados substituem as referências automáticas. Campos vazios usam dados da DUIMP e os padrões das regras tributárias."
+        description="Configure a apresentação dos valores e as despesas rateadas nas notas filhas."
       >
         <form onSubmit={submit} className="mt-7 space-y-5">
           <div className="rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
             O rateio é feito em centavos e a eventual diferença de arredondamento fica no item de maior valor aduaneiro, garantindo reconciliação exata.
           </div>
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border p-4">
+            <input
+              type="checkbox"
+              className="mt-1 size-4 accent-primary"
+              checked={includeInternationalCosts}
+              disabled={saving}
+              onChange={(event) => setIncludeInternationalCosts(event.target.checked)}
+            />
+            <span>
+              <span className="block font-semibold">Incluir frete e seguro internacionais no valor dos produtos (CIF)</span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                Ativado por padrão. O XML apresenta esses valores em vProd, sem repeti-los em vFrete e vSeg. Desative para exibi-los separados na nota.
+              </span>
+            </span>
+          </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
             {costFields.map((field) => (
@@ -263,6 +282,7 @@ function PlanSummary({ plan }: { plan: NfeDocumentPlan }) {
           <p className="mt-1">
             Versão {plan.version_number} · {plan.documents.length} NF-e filha(s) · {plan.totals.items_count ?? 0} item(ns).
           </p>
+          <p className="mt-1">Frete e seguro internacionais: {plan.include_international_costs_in_product ? "incluídos em vProd (CIF)" : "destacados em vFrete e vSeg"}.</p>
         </div>
       </div>
 
