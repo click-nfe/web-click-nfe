@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -62,6 +63,7 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
   const [duimpNumber, setDuimpNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [importerAccessDenied, setImporterAccessDenied] = useState(false);
 
   const workflow = workflowRequest.data;
   const process = processRequest.data;
@@ -84,6 +86,7 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
 
     setSubmitting(true);
     setError(null);
+    setImporterAccessDenied(false);
     try {
       const normalized = formattedDuimp(currentDuimpNumber);
       await updateImportProcess(processId, { duimp_number: normalized, source: process?.source.toLowerCase() === "simplified" ? "simplified" : "portal_unico" });
@@ -91,6 +94,10 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
       setDuimpNumber(normalized);
       await Promise.all([processRequest.mutate(), workflowRequest.mutate()]);
     } catch (requestError) {
+      setImporterAccessDenied(
+        axios.isAxiosError(requestError) &&
+        requestError.response?.data?.error === "portal_unico_importer_access_denied",
+      );
       setError(bffErrorMessage(requestError));
     } finally {
       setSubmitting(false);
@@ -172,7 +179,7 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
               <input
                 className="field-input font-mono uppercase"
                 value={currentDuimpNumber}
-                onChange={(event) => { setDuimpNumber(event.target.value); setError(null); }}
+                onChange={(event) => { setDuimpNumber(event.target.value); setError(null); setImporterAccessDenied(false); }}
                 placeholder="00BR0000000000-0"
                 autoCapitalize="characters"
                 disabled={submitting}
@@ -187,7 +194,12 @@ export function NfeIssuanceProcess({ processId }: { processId: string }) {
                 Valide a conexão com o Portal Único para consultar a DUIMP. Perfil fiscal e sequência NF-e serão necessários somente nas etapas de emissão.
               </div>
             ) : null}
-            {error ? <p className="mt-4 text-sm text-destructive" role="alert">{error}</p> : null}
+            {error ? importerAccessDenied ? (
+              <div className="mt-5 flex max-w-2xl items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4 text-sm text-amber-800 dark:text-amber-300" role="alert">
+                <AlertTriangle className="mt-0.5 shrink-0" size={18} />
+                <div><p className="font-semibold">Acesso à DUIMP não autorizado pelo Portal Único</p><p className="mt-1">{error}</p></div>
+              </div>
+            ) : <p className="mt-4 text-sm text-destructive" role="alert">{error}</p> : null}
 
             <button type="submit" className="button button-primary mt-6 min-h-12 px-6" disabled={submitting || !canFetch || !isValidDuimp(currentDuimpNumber)}>
               {submitting ? <LoaderCircle className="animate-spin" size={17} /> : <FileSearch size={17} />}
