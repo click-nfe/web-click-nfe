@@ -571,6 +571,7 @@ export type NfeDocumentPlan = {
   version_number: number;
   status: string;
   allocation_basis: "customs_value";
+  include_international_costs_in_product: boolean;
   shared_costs: NfeSharedCosts;
   totals: {
     documents_count?: number;
@@ -623,6 +624,7 @@ export type NfeDocumentPlanState = {
 export type CreateNfeDocumentPlanPayload = {
   duimp_snapshot_id: string;
   additional_costs: NfeSharedCosts;
+  include_international_costs_in_product: boolean;
 };
 
 function toBackendParams(params: ImportProcessListParams = {}) {

@@ -23,7 +23,9 @@ function parsePayload(value: unknown): CreateNfeDocumentPlanPayload | null {
     !isObject(value) ||
     typeof value.duimp_snapshot_id !== "string" ||
     !value.duimp_snapshot_id.trim() ||
-    !isObject(value.additional_costs)
+    !isObject(value.additional_costs) ||
+    (value.include_international_costs_in_product !== undefined &&
+      typeof value.include_international_costs_in_product !== "boolean")
   ) {
     return null;
   }
@@ -42,6 +44,7 @@ function parsePayload(value: unknown): CreateNfeDocumentPlanPayload | null {
   return {
     duimp_snapshot_id: value.duimp_snapshot_id.trim(),
     additional_costs: additionalCosts,
+    include_international_costs_in_product: value.include_international_costs_in_product ?? true,
   };
 }
 
